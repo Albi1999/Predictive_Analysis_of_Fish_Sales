@@ -1,0 +1,24 @@
+---
+title: "Business Economic and Financial Data Final Report"
+author: "Antonio Mattesco, Alberto Calabrese, Flavio Kaci"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: true
+    number_sections: true
+    fig_caption: true
+    keep_tex: true
+    toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = 'center'
+  )
+```
+
+
+
