@@ -64,4 +64,3 @@ plot(swiss_eu$DATE, swiss_eu$Rate, type = "l", xlab = "Date", ylab = "Exchange R
 abline(swiss_eu_lm, col = "orange", lwd = 2)
 
 
-
