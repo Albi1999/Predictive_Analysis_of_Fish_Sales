@@ -63,4 +63,48 @@ plot(swiss_eu$DATE, swiss_eu$Rate, type = "l", xlab = "Date", ylab = "Exchange R
      main = "Swiss Franc-Euro Exchange Rate", col = "green")
 abline(swiss_eu_lm, col = "orange", lwd = 2)
 
+################################################################################
+# AM 29/12/2024
+################################################################################
+# The following analysis will be focused on the CHF/EUR rate
+
+# Check for NA values
+colSums(is.na(swiss_eu))
+# we have 62 NAs
+swiss_eu[is.na(swiss_eu),] # in 'Rate' column the NAs look like "NA" while in the other cols are "<NA>"
+# btw the length of the ts is large enoug to consider just a subset i.e. just from year = 2020 
+ts_chf_eu = swiss_eu[swiss_eu$DATE>as.Date("2020-02-01"), ] # 01 jan 2020 does not exist
+dim(ts_chf_eu) # 1248 obs
+
+# We observed from the plots that the ts is not stationary
+y = ts_chf_eu$Rate
+acf(y)
+# then a fist step is to make the first diff
+y_diff = diff(y, differences = 1) # now obv the length will be 1247 and no more 1248
+# convert y_diff in ts format
+Y = ts(y_diff, frequency = 365.25) # .25 bc anno bisestile
+# TODO: non riesco a mettere data di start
+
+plot.ts(Y) # mean = 0 YES
+           # var = constant ~YES
+acf(Y) # we solve the stationary issue
+
+# we can now proceed with the Modelling phase
+# ** TRAIN/TEST SPLIT **
+n_sample = length(Y)[1]*0.9
+y_train = Y[1:n_sample]
+y_test = Y[(n_sample+1):length(Y)]
+acf(y_train)
+
+
+
+
+
+
+
+
+
+
+
+
 
