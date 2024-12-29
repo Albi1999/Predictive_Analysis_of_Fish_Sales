@@ -198,13 +198,6 @@ AIC(fit_LR_year_mont)
 fit_BM <- BM(y_train_ts, display = TRUE)
 summary(fit_BM)
 
-plot(y_diff, type = "b", xlab = "XXX", ylab = "YYY",
-     pch = 16, lty = 3, xaxt = "n", cex = 0.6)
-
-pred_BM <- predict(fit_BM, newx=c(1:900))
-pred.instcas<- make.instantaneous(pred_BM)
-
-lines(pred.instcas, lwd = 2, col = 2) 
 
 
 
