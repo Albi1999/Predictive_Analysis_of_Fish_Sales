@@ -162,7 +162,7 @@ ts_chf_eu <- ts_chf_eu %>%
 
 # We observed from the plots that the ts is not stationary
 y = ts_chf_eu$Rate
-acf(y)
+Acf(y)
 
 y = ts(ts_chf_eu$Rate, frequency = 365, start = c("2020-01-02"), end = c(""))
 # then a fist step is to make the first diff
@@ -200,10 +200,6 @@ abline(fit_lr1, col=3)
 dwtest(fit_lr1)
 
 
-
-
-
-
 # ** BASS MODEL **
 
 library(DIMORA)
@@ -216,7 +212,7 @@ plot(y_diff, type = "b", xlab = "XXX", ylab = "YYY"
 lines(pred.instcas, lwd = 2, col = 2)  # Aggiungi la linea del modello
 
 
-
+cat("prova1")
 
 
 
