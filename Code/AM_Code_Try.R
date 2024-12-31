@@ -11,11 +11,22 @@ library(ggplot2)
 library(tidyverse)
 library(dplyr)
 library(forecast)
+library(lmtest) # DW test
 library(DIMORA) # BASS Model
 
 ################################################################################
 # USEFUL FUNCTIONS
 ################################################################################
+compute_AIC <- function(n, RSS, k) {
+  
+  # GUARDA DOCUMENTAZIONE AIC: ?AIC
+  logLik <- -n / 2 * (log(2 * pi) + log(RSS / n) + 1)
+  AIC <- -2 * logLik + 2 * k
+  
+  return(AIC)
+}
+
+
 plot_train_pred <- function(y_train,
                             y_pred,
                             model_name){
@@ -45,12 +56,9 @@ plot_train_pred <- function(y_train,
 
 # The following analysis will be focused on the CHF/EUR rate
 
-swiss_eu <- read.csv2("Data/Swiss_Euro_daily_2020_2024.csv", 
+swiss_eu <- read.csv2("Data/Swiss_Euro_daily_2020_2024.csv",
                       sep = ",",
-                      na.strings = c("")
-                      )
-
-swiss_eu <- read.csv2("Data/Swiss_Euro_daily_2020_2024.csv", sep = ",") %>%
+                      na.strings = "") %>%
   mutate(
     DATE = as.Date(DATE, format = "%Y-%m-%d"),
     Rate = as.numeric(Swiss.franc.Euro..EXR.D.CHF.EUR.SP00.A.)
@@ -60,13 +68,12 @@ swiss_eu <- read.csv2("Data/Swiss_Euro_daily_2020_2024.csv", sep = ",") %>%
 # Check for NA values
 colSums(is.na(swiss_eu))
 
-# we have 62 NAs btw the length of the ts is large enoug to consider just a subset 
+# we have 62 NAs btw the length of the ts is large enough to consider just a subset 
 # i.e. just from year = 2020 
 ts_chf_eu = swiss_eu[swiss_eu$DATE>=as.Date("2020-01-01"), ] # N.B.: 01 jan 2020 does not exist
 dim(ts_chf_eu) # 12470 obs
 
 rownames(ts_chf_eu) <- NULL
-ts_chf_eu[1:5,]
 
 # NON ci sono weekend e giorni festivi
 # create the missing dates and impute the Rate value using the previous one
@@ -125,9 +132,6 @@ yearly_count # Number of rows for each year-->mettiamo frequency=365
 # TS Properties
 ################################################################################
 
-ts_chf_eu <- ts_chf_eu %>% 
-  select(-c("DayOfYear"))
-
 # We observed from the plots that the ts is not stationary
 Acf(ts_chf_eu$Rate)
 
@@ -160,6 +164,14 @@ y_test_ts <- subset(y_diff, start = n_sample + 1)
 
 tt = 1:nrow(train)
 
+fit_LR_trend <- lm(y_train ~ tt)
+summary(fit_LR_trend)
+
+plot_train_pred(y_train = y_train,
+                y_pred = predict(fit_LR_trend),
+                model_name = "Linear Regression w/ Monthly Seasonality")
+##
+
 fit_LR_month <- lm(y_train ~ tt + train$month)
 summary(fit_LR_month)
 
@@ -185,11 +197,17 @@ plot_train_pred(y_train = y_train,
                 y_pred = predict(fit_LR_year_month),
                 model_name = "Linear Regression w/ Monthly Seasonality")
 
+res_LR_year_month <- residuals(fit_LR_year_month)
+plot(res_LR_year_month, ylab="residuals") # C'É UNA CHIARA TENDENZA NEI RESIDUI
+# iterazioni o variabile day non migliroano!!!!
+dwtest(fit_LR_year_month)
+
 #####
 
 AIC(fit_LR_month)
 AIC(fit_LR_year)
-AIC(fit_LR_year_mont)
+AIC(fit_LR_year_month) # lower AIC-->best model
+
 
 ################################################################################
 # ** BASS MODEL **
@@ -198,6 +216,29 @@ AIC(fit_LR_year_mont)
 fit_BM <- BM(y_train_ts, display = TRUE)
 summary(fit_BM)
 
+AIC_BM <- compute_AIC(n = length(fit_BM$data),
+                      RSS = fit_BM$RSS,
+                      k = length(fit_BM$coefficients))
+AIC_BM
+
+################################################################################
+# ** GAM MODEL **
+################################################################################
+
+gam_model <- gam(Rate ~ s(DayOfYear, bs = "cs") + Year, data = ts_chf_eu)
+
+summary(gam_model)
+
+gam_forecast <- predict(gam_model, newdata = ts_chf_eu)
+AIC(gam_model)
+
+plot_train_pred(y_train = ts_chf_eu$Rate,
+                y_pred = gam_forecast,
+                model_name = "GAM Model")
+
+res_GAM <- residuals(gam_model)
+plot(res_GAM, ylab="residuals") # C'É UNA CHIARA TENDENZA NEI RESIDUI
+dwtest(gam_model)
 
 
 
