@@ -1,5 +1,16 @@
 # First code, just to see the data plot and fit a couple of models to see how they perform
 
+# LINEAR REGRESSION -- RIGA 231 circa
+# TODO: GUARDARE CON TEST DI SIGNIFICATIVITÁ SE POSSIAMO RIMUOVERE UNA VARIABILE 
+#       E.G.: TOLGO trainm$Year
+#       Imo usiamo drop1 e update peró meglio vedere cosa fa prof
+
+# BASS Model  -- RIGA 243 circa
+# TODO: NON SO UN TUBO DEL BASS MODEL E MI É DIFFICILE ITERPRETARE I RISULTATI, 
+#       IN LINEA DI MASSIMA MI PARE FACCIA CAGARE
+
+
+
 rm(list=ls())
 
 ################################################################################
@@ -17,6 +28,40 @@ library(DIMORA) # BASS Model
 ################################################################################
 # USEFUL FUNCTIONS
 ################################################################################
+
+split_train_test = function(data, name_y, prop){
+  n_sample = nrow(data)*prop
+  
+  train = data[1:n_sample, ]
+  y_train = train[[name_y]]
+  
+  test = data[(n_sample+1):nrow(data),]
+  y_test = test[[name_y]]
+
+  
+  return(list(train = train, y_train = y_train, test = test, y_test = y_test))
+}
+
+plot_train_test = function(train_test, name_y){
+  train_length <- length(train_test$y_train)
+  test_length <- length(train_test$y_test)
+  time_index <- c(1:(train_length + test_length))
+  
+  data_plot <- data.frame(
+    Time = time_index,
+    Value = c(as.numeric(train_test$y_train), as.numeric(train_test$y_test)),
+    Type = c(rep("Train", train_length), rep("Test", test_length))
+  )
+  
+  ggplot(data_plot, aes(x = Time, y = Value, color = Type)) +
+    geom_line() +
+    labs(title = paste(name_y, ": Train vs Test"),
+         x = "Tempo",
+         y = "Valore") +
+    scale_color_manual(values = c("Train" = "blue", "Test" = "red")) +
+    theme_minimal()
+}
+
 compute_AIC <- function(n, RSS, k) {
   
   # GUARDA DOCUMENTAZIONE AIC: ?AIC
@@ -30,11 +75,10 @@ compute_AIC <- function(n, RSS, k) {
 plot_train_pred <- function(y_train,
                             y_pred,
                             model_name){
-  plot_data <- data.frame(
+  plot_data = data.frame(
     Time = 1:length(y_train), 
     Observed = y_train,
-    Predicted = y_pred
-  )
+    Predicted = y_pred)
   
   ggplot(plot_data, aes(x = Time)) +
     geom_line(aes(y = Observed),
@@ -42,7 +86,7 @@ plot_train_pred <- function(y_train,
     geom_line(aes(y = Predicted), color = "red",
               linewidth = 1) + 
     labs(
-      title = paste("Observed vs Predicted Values Over Time\nModel:",model_name),
+      title = paste("Observed and Predicted Values\nModel:",model_name),
       x = "Time",
       y = "Values"
     ) +
@@ -53,153 +97,130 @@ plot_train_pred <- function(y_train,
 ################################################################################
 # Load Data and Manipulation
 ################################################################################
+library(tidyverse)
 
-# The following analysis will be focused on the CHF/EUR rate
+data <- read.csv("C:/Users/antom/Downloads/data.csv")
 
-swiss_eu <- read.csv2("Data/Swiss_Euro_daily_2020_2024.csv",
-                      sep = ",",
-                      na.strings = "") %>%
-  mutate(
-    DATE = as.Date(DATE, format = "%Y-%m-%d"),
-    Rate = as.numeric(Swiss.franc.Euro..EXR.D.CHF.EUR.SP00.A.)
-  ) %>%
-  select(-Swiss.franc.Euro..EXR.D.CHF.EUR.SP00.A.)
+# Trasforma la colonna 'Date' in formato Date
+data$Date <- as.Date(data$Date, format = "%Y-%m-%d")
 
 # Check for NA values
-colSums(is.na(swiss_eu))
+colSums(is.na(data))
 
-# we have 62 NAs btw the length of the ts is large enough to consider just a subset 
-# i.e. just from year = 2020 
-ts_chf_eu = swiss_eu[swiss_eu$DATE>=as.Date("2020-01-01"), ] # N.B.: 01 jan 2020 does not exist
-dim(ts_chf_eu) # 12470 obs
-
-rownames(ts_chf_eu) <- NULL
-
-# NON ci sono weekend e giorni festivi
-# create the missing dates and impute the Rate value using the previous one
-
-all_dates <- seq(min(ts_chf_eu$DATE), max(ts_chf_eu$DATE), by = "day")
-full_dates <- data.frame(DATE = all_dates)
-missing_dates <- setdiff(all_dates, ts_chf_eu$DATE)
-
-ts_chf_eu <- full_dates %>%
-  left_join(ts_chf_eu, by = "DATE")
-
-ts_chf_eu$TIME.PERIOD <- format(ts_chf_eu$DATE, "%d %b %Y")
-
-# MSA è servito a qualcosa...
-ts_chf_eu$Rate <- na.locf(ts_chf_eu$Rate)#imputation method
-dim(ts_chf_eu)[1] == length(all_dates)
-
-
-ts_chf_eu <- ts_chf_eu %>%
-  mutate(month = format(DATE, "%m"),
-         Year = as.factor(format(DATE, "%Y")),
-         DayOfYear = as.numeric(format(DATE, "%j")) # udeful for the plots
+data <- data %>%
+  mutate(Month = format(Date, "%m"),
+         Year = as.factor(format(Date, "%Y"))
          )
          
-ts_chf_eu[1:10,]
+head(data)
 
 ################################################################################
 # Plots
 ################################################################################
 
-# Plot di tutte le serie temporali separate per anno
-ggplot(ts_chf_eu, aes(x = DATE, y = Rate, color = Year, group = Year)) +
-  geom_line() +  # Disegna le linee per ogni anno
-  labs(x = "Days from Start of Year", y = "EUR/CHF", 
+library(ggplot2)
+
+ggplot(data, aes(x = Date)) +
+  geom_line(aes(y = Baccala_Mantecato, color = "Baccala Mantecato")) +
+  geom_line(aes(y = Baccala_Vicentina, color = "Baccala Vicentina")) +
+  labs(title = "Serie Storica di Baccala Mantecato e Baccala Vicentina",
+       x = "Data",
+       y = "Quantità") +
+  scale_color_manual(values = c("Baccala Mantecato" = "blue", "Baccala Vicentina" = "red"),
+                     name = "Tipologia") +
+  theme_minimal()
+
+
+ggplot(data, aes(x = Month, y = Baccala_Mantecato, color = Year, group = Year)) +
+  geom_line() + 
+  labs(x = "Days from Start of Year", y = "Baccala_Mantecato", 
        title = "Time Series for Each Year") +
   theme_minimal() +
   theme(legend.title = element_blank())
 
-
-ggplot(ts_chf_eu, aes(x = DayOfYear, y = Rate, color = Year, group = Year)) +
-  geom_line() +  # Disegna le linee per ogni anno
-  labs(x = "Days from Start of Year", y = "EUR/CHF", 
+ggplot(data, aes(x = Month, y = Baccala_Vicentina, color = Year, group = Year)) +
+  geom_line() +
+  labs(x = "Month of the Year", y = "Baccala_Mantecato", 
        title = "Time Series for Each Year") +
   theme_minimal() +
   theme(legend.title = element_blank())
-
-# Non mi sembra di vedere alcuna stagionalità precisa 
-ts_chf_eu$Year <- format(ts_chf_eu$DATE, "%Y")
-yearly_count <- ts_chf_eu %>%
-  count(Year)
-yearly_count # Number of rows for each year-->mettiamo frequency=365 
-#                                             nella funzione ts()
-
 
 ################################################################################
 # TS Properties
 ################################################################################
 
-# We observed from the plots that the ts is not stationary
-Acf(ts_chf_eu$Rate)
+ym = ts(data$Baccala_Mantecato, frequency = 12, start = c(2020,01))
+yv = ts(data$Baccala_Vicentina, frequency = 12, start = c(2020,01))
 
-y = ts(ts_chf_eu$Rate, frequency = 365, start = c(2020,01,02))
-# then a fist step is to make the first diff
-y_diff = diff(y, differences = 1) # now obv the length will be 1247 and no more 1248
-# convert y_diff in ts format
+plot.ts(yv) 
+plot.ts(ym) 
 
-plot.ts(y_diff) # mean = 0 YES
-           # var = constant ~YES
-acf(y_diff) # we solve the stationary issue
-
+# Stationary check
+acf(data$Baccala_Mantecato)
+acf(data$Baccala_Vicentina)
 
 ################################################################################
 # ** TRAIN/TEST SPLIT **
 ################################################################################
 
-n_sample = length(y_diff)[1]*0.9
-train = ts_chf_eu[1:n_sample, ]
-y_train = train$Rate
-test = ts_chf_eu[(n_sample+1):nrow(ts_chf_eu),]
-y_test = test$Rate
 
-y_train_ts <- subset(y_diff, start = 1, end = n_sample)
-y_test_ts <- subset(y_diff, start = n_sample + 1)
+train_testm <- split_train_test(data, "Baccala_Mantecato", 0.9)
+plot_train_test(train_testm, "Baccala_Mantecato")
+
+train_testv <- split_train_test(data, "Baccala_Vicentina", 0.9)
+plot_train_test(train_testv, "Baccala_Vicentina")
+
+trainm = train_testm$train
+y_train_m = train_testm$y_train
+testm = train_testm$test
+y_test_m = train_testm$y_test
+
+trainv = train_testv$train
+y_train_v = train_testv$y_train
+testv = train_testv$test
+y_test_v = train_testv$y_test
 
 ################################################################################
 # ** Linear Regression MODEL **
 ################################################################################
 
-tt = 1:nrow(train)
+tt = 1:nrow(trainm)
 
-fit_LR_trend <- lm(y_train ~ tt)
+fit_LR_trend <- lm(y_train_m ~ tt)
 summary(fit_LR_trend)
 
-plot_train_pred(y_train = y_train,
+plot_train_pred(y_train = y_train_m,
                 y_pred = predict(fit_LR_trend),
                 model_name = "Linear Regression w/ Monthly Seasonality")
 ##
 
-fit_LR_month <- lm(y_train ~ tt + train$month)
+fit_LR_month <- lm(y_train_m ~ tt + trainm$Month)
 summary(fit_LR_month)
 
-plot_train_pred(y_train = y_train,
+plot_train_pred(y_train = y_train_m,
                 y_pred = predict(fit_LR_month),
                 model_name = "Linear Regression w/ Monthly Seasonality")
 
 ##
 
-fit_LR_year <- lm(y_train ~ tt + train$Year)
+fit_LR_year <- lm(y_train_m ~ tt + trainm$Year)
 summary(fit_LR_year)
 
-plot_train_pred(y_train = y_train,
+plot_train_pred(y_train = y_train_m,
                 y_pred = predict(fit_LR_year),
                 model_name = "Linear Regression w/ Monthly Seasonality")
 
 ##
-
-fit_LR_year_month <- lm(y_train ~ tt + train$Year + train$month)
+fit_LR_year_month <- lm(y_train_m ~ tt + trainm$Year + trainm$Month)
 summary(fit_LR_year_month)
 
-plot_train_pred(y_train = y_train,
+plot_train_pred(y_train = y_train_m,
                 y_pred = predict(fit_LR_year_month),
                 model_name = "Linear Regression w/ Monthly Seasonality")
 
 res_LR_year_month <- residuals(fit_LR_year_month)
-plot(res_LR_year_month, ylab="residuals") # C'É UNA CHIARA TENDENZA NEI RESIDUI
-# iterazioni o variabile day non migliroano!!!!
+plot(res_LR_year_month, ylab="residuals")
+library(lmtest)
 dwtest(fit_LR_year_month)
 
 #####
@@ -207,37 +228,50 @@ dwtest(fit_LR_year_month)
 AIC(fit_LR_month)
 AIC(fit_LR_year)
 AIC(fit_LR_year_month) # lower AIC-->best model
-
+# TODO: GUARDARE CON TEST DI SIGNIFICATIVITÁ SE POSSIAMO RIMUOVERE UNA VARIABILE 
+#       E.G.: TOLGO trainm$Year
 
 ################################################################################
 # ** BASS MODEL **
 ################################################################################
 
-fit_BM <- BM(y_train_ts, display = TRUE)
+y_train_tsm = ts(y_train_m, start = c(2021, 01), freq = 12)
+end(y_train_tsm)
+library(DIMORA)
+fit_BM <- BM(y_train_tsm, display = TRUE)
 summary(fit_BM)
 
 AIC_BM <- compute_AIC(n = length(fit_BM$data),
                       RSS = fit_BM$RSS,
                       k = length(fit_BM$coefficients))
 AIC_BM
+# TODO: NON SO UN TUBO DEL BASS MODEL E MI É DIFFICILE ITERPRETARE I RISULTATI, 
+#       IN LINEA DI MASSIMA MI PARE FACCIA CAGARE
 
 ################################################################################
 # ** GAM MODEL **
 ################################################################################
 
-gam_model <- gam(Rate ~ s(DayOfYear, bs = "cs") + Year, data = ts_chf_eu)
+library(mgcv)
+trainm$Month <- as.numeric(trainm$Month)
+gam_model <- gam(Baccala_Mantecato ~ s(Month), data = trainm)
 
 summary(gam_model)
+# leggendo documentazione, sembra figo -> https://www.rdocumentation.org/packages/mgcv/versions/1.9-1/topics/gam
+plot(gam_model, pages=1, seWithMean=TRUE) 
+gam.check(gam_model)
+#
 
-gam_forecast <- predict(gam_model, newdata = ts_chf_eu)
+gam_forecast <- predict(gam_model, newdata = trainm)
 AIC(gam_model)
 
-plot_train_pred(y_train = ts_chf_eu$Rate,
+
+plot_train_pred(y_train = trainm$Baccala_Mantecato,
                 y_pred = gam_forecast,
                 model_name = "GAM Model")
 
 res_GAM <- residuals(gam_model)
-plot(res_GAM, ylab="residuals") # C'É UNA CHIARA TENDENZA NEI RESIDUI
+plot(res_GAM, ylab="residuals")
 dwtest(gam_model)
 
 
