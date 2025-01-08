@@ -14,7 +14,6 @@
 #       PROVARE NUOVI MODELLI-->GUARDARE CODICE PROF E SE POSSIBILE DOCUMENTAZION PERCHE CE ROBA FIGA
 #       TIPO QUELLO CHE HO TROVATO SU GAM
 
-
 rm(list=ls())
 
 ################################################################################
@@ -29,6 +28,7 @@ library(forecast)
 library(lubridate)
 library(lmtest) # DW test
 library(DIMORA) # BASS Model
+library(mgcv) # GAM Model
 
 ################################################################################
 # USEFUL FUNCTIONS
@@ -42,7 +42,7 @@ split_train_test = function(data, name_y, prop){
   
   test = data[(n_sample+1):nrow(data),]
   y_test = test[[name_y]]
-
+  
   
   return(list(train = train, y_train = y_train, test = test, y_test = y_test))
 }
@@ -102,7 +102,6 @@ plot_train_pred <- function(y_train,
 ################################################################################
 # Load Data and Manipulation
 ################################################################################
-library(tidyverse)
 
 data <- read_csv("Data/data.csv")
 
@@ -115,43 +114,43 @@ colSums(is.na(data))
 data <- data %>%
   mutate(Month = format(Date, "%m"),
          Year = as.factor(format(Date, "%Y"))
-         )
-         
+  )
+
 head(data)
 
 ################################################################################
 # LOAD DATA 2 --> variabile esplicativa
 ################################################################################
 
-consumo_mensile <- read_excel("Data/Fish_consumption_ita_raw.xlsx")
+monthly_consumption <- read_excel("Data/Fish_consumption_ita_raw.xlsx")
 
-consumo_mensile <- consumo_mensile %>% filter(CG == "Salmon")
+monthly_consumption <- monthly_consumption %>% filter(CG == "Salmon")
 
-consumo_mensile <- consumo_mensile %>%
+monthly_consumption <- monthly_consumption %>%
   mutate(kg = as.numeric(`volume(Kg)`)) 
-str(consumo_mensile)
+str(monthly_consumption)
 
-serie_storica_mensile <- consumo_mensile %>%
+monthly_time_series <- monthly_consumption %>%
   group_by(year, month) %>%
   summarise(kg = sum(kg)) %>%
   ungroup()
 
-serie_storica_mensile <- serie_storica_mensile %>%
+monthly_time_series <- monthly_time_series %>%
   filter(year > 2020 | (year == 2020 & month %in% c(11, 12)))
 
 # Std
-serie_storica_mensile <- serie_storica_mensile %>%
+monthly_time_series <- monthly_time_series %>%
   mutate(kg_std = as.vector(scale(kg)))
 
-serie_storica_mensile$Date <- as.Date(paste(serie_storica_mensile$year, serie_storica_mensile$month, "01", sep = "-"))
+monthly_time_series$Date <- as.Date(paste(monthly_time_series$year, monthly_time_series$month, "01", sep = "-"))
 
-head(serie_storica_mensile)
+head(monthly_time_series)
 
-ggplot(serie_storica_mensile, aes(x = Date, y = kg_std)) +
+ggplot(monthly_time_series, aes(x = Date, y = kg_std)) +
   geom_line(color = 'blue') +
-  labs(title = 'Serie Storica di kg Consumati (Salmon)', 
+  labs(title = 'Time Series of Consumed Kg (Salmon)', 
        x = 'Data', 
-       y = 'Kg Consumati') +
+       y = 'Kg Consumed') +
   theme_minimal() +
   scale_x_date(labels = scales::date_format("%b %Y"), breaks = "3 months") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
@@ -160,16 +159,14 @@ ggplot(serie_storica_mensile, aes(x = Date, y = kg_std)) +
 # Plots
 ################################################################################
 
-library(ggplot2)
-
 ggplot(data, aes(x = Date)) +
   geom_line(aes(y = Baccala_Mantecato, color = "Baccala Mantecato")) +
   geom_line(aes(y = Baccala_Vicentina, color = "Baccala Vicentina")) +
-  labs(title = "Serie Storica di Baccala Mantecato e Baccala Vicentina",
-       x = "Data",
-       y = "Quantità") +
+  labs(title = "Time Series of Baccala Mantecato and Baccala Vicentina",
+       x = "Date",
+       y = "Quantity") +
   scale_color_manual(values = c("Baccala Mantecato" = "blue", "Baccala Vicentina" = "red"),
-                     name = "Tipologia") +
+                     name = "Kind") +
   theme_minimal()
 
 
@@ -182,7 +179,7 @@ ggplot(data, aes(x = Month, y = Baccala_Mantecato, color = Year, group = Year)) 
 
 ggplot(data, aes(x = Month, y = Baccala_Vicentina, color = Year, group = Year)) +
   geom_line() +
-  labs(x = "Month of the Year", y = "Baccala_Mantecato", 
+  labs(x = "Month of the Year", y = "Baccala_Vicentina", 
        title = "Time Series for Each Year") +
   theme_minimal() +
   theme(legend.title = element_blank())
@@ -194,8 +191,8 @@ ggplot(data, aes(x = Month, y = Baccala_Vicentina, color = Year, group = Year)) 
 ym = ts(data$Baccala_Mantecato, frequency = 12, start = c(2020,01))
 yv = ts(data$Baccala_Vicentina, frequency = 12, start = c(2020,01))
 
-plot.ts(yv) 
-plot.ts(ym) 
+plot.ts(yv)
+plot.ts(ym)
 
 # Stationary check
 acf(data$Baccala_Mantecato)
@@ -262,7 +259,6 @@ plot_train_pred(y_train = y_train_m,
 
 res_LR_year_month <- residuals(fit_LR_year_month)
 plot(res_LR_year_month, ylab="residuals")
-library(lmtest)
 dwtest(fit_LR_year_month)
 
 #####
@@ -277,9 +273,9 @@ AIC(fit_LR_year_month) # lower AIC-->best model
 # ** BASS MODEL **
 ################################################################################
 
-y_train_tsm = ts(y_train_m, start = c(2021, 01), freq = 12)
+y_train_tsm = ts(y_train_m, start = c(2021, 01), frequency = 12)
 end(y_train_tsm)
-library(DIMORA)
+
 fit_BM <- BM(y_train_tsm, display = TRUE)
 summary(fit_BM)
 
@@ -294,7 +290,6 @@ AIC_BM
 # ** GAM MODEL **
 ################################################################################
 
-library(mgcv)
 trainm$Month <- as.numeric(trainm$Month)
 gam_model <- gam(Baccala_Mantecato ~ s(Month), data = trainm)
 
@@ -315,7 +310,3 @@ plot_train_pred(y_train = trainm$Baccala_Mantecato,
 res_GAM <- residuals(gam_model)
 plot(res_GAM, ylab="residuals")
 dwtest(gam_model)
-
-
-
-
