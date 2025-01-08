@@ -30,7 +30,7 @@ library(DIMORA) # BASS Model
 ################################################################################
 
 split_train_test = function(data, name_y, prop){
-  n_sample = nrow(data)*prop
+  n_sample = floor(nrow(data)*prop)
   
   train = data[1:n_sample, ]
   y_train = train[[name_y]]
@@ -99,7 +99,7 @@ plot_train_pred <- function(y_train,
 ################################################################################
 library(tidyverse)
 
-data <- read.csv("C:/Users/antom/Downloads/data.csv")
+data <-  data <- read_csv("Data/data.csv")
 
 # Trasforma la colonna 'Date' in formato Date
 data$Date <- as.Date(data$Date, format = "%Y-%m-%d")
