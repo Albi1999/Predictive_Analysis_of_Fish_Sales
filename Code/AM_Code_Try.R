@@ -9,6 +9,10 @@
 # TODO: NON SO UN TUBO DEL BASS MODEL E MI É DIFFICILE ITERPRETARE I RISULTATI, 
 #       IN LINEA DI MASSIMA MI PARE FACCIA CAGARE
 
+# NEXT STEPS
+# TODO: INSERIRE VARIABILE DEL FISH CONSUMPTION NEI MODELLI IN CUI É POSSIBILE FARLO
+#       PROVARE NUOVI MODELLI-->GUARDARE CODICE PROF E SE POSSIBILE DOCUMENTAZION PERCHE CE ROBA FIGA
+#       TIPO QUELLO CHE HO TROVATO SU GAM
 
 
 rm(list=ls())
@@ -22,6 +26,7 @@ library(ggplot2)
 library(tidyverse)
 library(dplyr)
 library(forecast)
+library(lubridate)
 library(lmtest) # DW test
 library(DIMORA) # BASS Model
 
@@ -99,7 +104,7 @@ plot_train_pred <- function(y_train,
 ################################################################################
 library(tidyverse)
 
-data <-  data <- read_csv("Data/data.csv")
+data <- read_csv("Data/data.csv")
 
 # Trasforma la colonna 'Date' in formato Date
 data$Date <- as.Date(data$Date, format = "%Y-%m-%d")
@@ -113,6 +118,43 @@ data <- data %>%
          )
          
 head(data)
+
+################################################################################
+# LOAD DATA 2 --> variabile esplicativa
+################################################################################
+
+consumo_mensile <- read_excel("Data/Fish_consumption_ita_raw.xlsx")
+
+consumo_mensile <- consumo_mensile %>% filter(CG == "Salmon")
+
+consumo_mensile <- consumo_mensile %>%
+  mutate(kg = as.numeric(`volume(Kg)`)) 
+str(consumo_mensile)
+
+serie_storica_mensile <- consumo_mensile %>%
+  group_by(year, month) %>%
+  summarise(kg = sum(kg)) %>%
+  ungroup()
+
+serie_storica_mensile <- serie_storica_mensile %>%
+  filter(year > 2020 | (year == 2020 & month %in% c(11, 12)))
+
+# Std
+serie_storica_mensile <- serie_storica_mensile %>%
+  mutate(kg_std = as.vector(scale(kg)))
+
+serie_storica_mensile$Date <- as.Date(paste(serie_storica_mensile$year, serie_storica_mensile$month, "01", sep = "-"))
+
+head(serie_storica_mensile)
+
+ggplot(serie_storica_mensile, aes(x = Date, y = kg_std)) +
+  geom_line(color = 'blue') +
+  labs(title = 'Serie Storica di kg Consumati (Salmon)', 
+       x = 'Data', 
+       y = 'Kg Consumati') +
+  theme_minimal() +
+  scale_x_date(labels = scales::date_format("%b %Y"), breaks = "3 months") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 
 ################################################################################
 # Plots
