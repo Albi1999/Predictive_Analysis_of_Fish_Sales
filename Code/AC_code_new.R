@@ -31,6 +31,23 @@
 #       COMMENTO:
 #         - TEST NORMALITÁ CON library(olsrr) (funzione='ols_test_normality') la usa la prof? ha senso? cosa fa?
 #           stesso discorso vale per ols_test_correlation  e ols_test_breusch_pagan
+#         
+#       
+#    ALBI 09/01/2025
+#     START COMMENT
+#       La prof non lo usa ma ne avevo già parlato con lei e ha detto che possiamo usare 
+#       tutti i pacchetti che vogliamo basta che sappiamo cosa fanno e che non ci sono problemi
+#       ovviamente dobbiamo sapere cosa fanno e commentare di conseguenza i risultati
+
+help("ols_test_normality")
+help("olsrr")
+
+#       Comunque è un pacchetto per fare dei check sulla normalitá dei residui, sulla correlazione e sulla eteroschedasticitá delle variabili
+#       ovviamente non dobbiamo usare tutte le sue funzioni, io intanto le avevo messe
+#       La cosa figa però è i plot che fa come puoi vedere nella sezione della Linear Regression
+#       I plot li ho anche già commentati brevemente
+#     END COMMENT
+
 
 # Clear workspace
 rm(list = ls())
