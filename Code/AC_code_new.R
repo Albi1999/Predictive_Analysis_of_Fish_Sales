@@ -67,7 +67,8 @@ library(mgcv) # GAM Model
 library(gbm) # Gradient Boosting Machine
 library(olsrr)
 
-setwd("D:/Projects_GitHub/BEFD_Project")
+# setwd("D:/Projects_GitHub/BEFD_Project") COMMENTED SINCE IT IS ONLY YOUR PATH
+# IF YOU EACH TIME OPEN RSTUDIO TRUGH THE PROJECT FILE YOU DON'T NEED TO SET THE WORKING DIRECTORY
 source("Code/Functions_Utilies.R") # AM: CI RENDE QUESTO SCRIPT PIU PULITO
 
 # 1. Load Data ----
@@ -298,74 +299,148 @@ summary(fit_ARIMA)
 
 forecast_ARIMA <- forecast(fit_ARIMA, h = length(train_testm$y_test))
 plot(forecast_ARIMA)
-
+# The actual data seems to deviate significantly from the forecast's confidence bands in some regions, particularly suggesting either: 
+#     Misspecified seasonal patterns.
+#     Non-stationarity or non-linear trends not captured by the model.
 plot_actual_vs_forecast(
   actual = train_testm$y_test,
   forecast = as.numeric(forecast_ARIMA$mean),
   model_name = "ARIMA"
 )
+# There is a clear discrepancy in the scale or trend alignment of the forecasts, particularly with over-forecasting for later periods.
 
 ## 4.3 Exponential Smoothing ----
 fit_ES <- ets(train_series)
 summary(fit_ES)
+# The selected model is ETS(A,N,A):
+# A: Additive error, additive trend.
+# N: No seasonality included.
+# A: Additive level component.
+
+# Smoothing Parameters:
+# Alpha (α) = 0.578: Moderate weighting of recent observations for level updates.
+# Gamma (γ) ≈ 0.0001: Negligible trend smoothing, suggesting very minimal trend updates.
+
+# Metrics and Diagnostics:
+
+#   AIC, AICc, BIC:
+#     AIC = 304.7, AICc = 322.5, BIC = 331.1. 
+#     While the AIC is acceptable, higher BIC suggests the model may be overfitting due to complexity.
+#   Training Set Error:
+#     Mean Error (ME): -0.14, which is very close to zero, showing minimal bias in predictions.
+#     RMSE: 3.72 and MAPE: 10.78%. These values are similar to ARIMA's, 
+#     indicating that ETS performs comparably in training.
+#   Residual ACF (Autocorrelation):
+#     Residual ACF1 = 0.14, indicating a small but present autocorrelation in residuals. 
+#     This hints that the model hasn't fully captured temporal dependencies.
+
 forecast_ES <- forecast(fit_ES, h = length(train_testm$y_test))
 plot(forecast_ES)
-# The actual data seems to deviate significantly from the forecast's confidence bands in some regions, particularly suggesting either: 
-#     Misspecified seasonal patterns.
-#     Non-stationarity or non-linear trends not captured by the model.
+# The confidence intervals widen with future forecasts, as expected in exponential smoothing models.
+# The forecast follows a gradual trend due to the lack of explicit seasonality (model uses additive components only).
 
 plot_actual_vs_forecast(
   actual = train_testm$y_test,
   forecast = as.numeric(forecast_ES$mean),
   model_name = "Exponential Smoothing"
 )
-# There is a clear discrepancy in the scale or trend alignment of the forecasts, particularly with over-forecasting for later periods.
+# There’s a clear divergence between actual values (blue line) and forecasted values (red dashed line). 
+# The forecast fails to capture the magnitude of fluctuations in the data, particularly the peak at time point 2 and the drop at time point 3.
+# This highlights the model’s inability to account for potential seasonality or non-linear trends.
 
 ## 4.4 GAM (Generalized Additive Model) ----
 gam_model <- gam(Baccala_Mantecato ~ s(as.numeric(Month)), data = trainm)
 summary(gam_model)
+# Model Components:
+#   Effective degrees of freedom (EDF) = 6.6, suggesting a moderately complex non-linear relationship.
+# Model Fit:
+#   Adjusted R-squared = 0.455, indicating that about 45.5% of the variance in Baccala_Mantecato is explained by the model.
+#   Deviance explained = 54%, aligning with the R-squared value.
 
 plot(gam_model, se = TRUE, col = "blue", main = "GAM Model", ylab = "Baccala Mantecato", xlab = "Month")
+# The smooth term for Month shows a clear non-linear pattern, capturing seasonal variations.
+# Confidence intervals widen in some areas, particularly near the end of the year, suggesting less data support for predictions in these months.
 
 gam.check(gam_model)
 # leggendo documentazione, sembra figo -> https://www.rdocumentation.org/packages/mgcv/versions/1.9-1/topics/gam
+# The gam.check results indicate no issues with the smoothness parameter (k-index = 1.08, p-value = 0.65), confirming that the basis dimension is sufficient.
+
+# Q-Q Plot: Deviance residuals align closely with the diagonal line, indicating that residuals are approximately normal.
+# Residual vs Linear Predictor: The residuals show some structure and variance changes, but no severe departures from homoscedasticity.
+# Histogram of Residuals: Residuals appear approximately symmetric, supporting normality assumptions.
 
 gam_forecast <- predict(gam_model, newdata = trainm)
 AIC(gam_model)
-
+# AIC = 293.6, which can be compared with other models to assess relative fit.
 plot_train_pred(y_train = trainm$Baccala_Mantecato,
                 y_pred = gam_forecast,
                 model_name = "GAM Model")
+# Predictions closely track the observed values in the training data, showing the model effectively captures non-linear relationships.
 
 res_GAM <- residuals(gam_model)
 plot(res_GAM, ylab="residuals", main = "GAM Model Residuals", col = "blue")
 abline(h = 0, col = "red")
+# Residuals vs Index: Residuals are centered around zero, with no strong patterns indicating unmodeled trends.
+
 dwtest(gam_model)
+# Durbin-Watson Test:
+# DW = 1.58 (p-value = 0.067), suggesting mild positive autocorrelation in residuals, though not statistically significant.
 
 plot_actual_vs_forecast(
   actual = train_testm$y_test,
   forecast = predict(gam_model, newdata = train_testm$test),
   model_name = "GAM"
 )
+# The GAM forecast deviates from the actual test data, especially for the peaks and valleys, indicating limited extrapolation capability beyond the training range.
 
 # 5. Multivariate Models ----
 
 ## 5.1 Multiple Linear Regression ----
 fit_MLR <- lm(Baccala_Mantecato ~ Month + Year, data = train_testm$train)
 summary(fit_MLR)
+# Key Metrics:
+#   Residual Standard Error: 4.539, indicating the average deviation of the predictions from the observed values
+#   Multiple R-squared = 0.8298 and Adjusted R-squared = 0.7448:
+#     About 83% of the variance in Baccala_Mantecato is explained by the model.
+#     Adjusted R-squared reflects a slight penalty for the number of predictors, but it still suggests a strong fit.
+# Significant Predictors:
+#   Statistically significant coefficients:
+#     Monthly effects: Months like August (p=0.002), October (p<0.001), and December (p<0.001) strongly influence the response.
+#    Year effects: All year dummy variables (p<0.01) are significant, indicating a downward trend in Baccala_Mantecato across years.
+#   Insignificant predictors: Some months (e.g., February, May, November) have high p-values (>0.1), suggesting their effects are not statistically meaningful.
+
 dwtest(fit_MLR)
+# DW = 1.0942, p-value = 0.00076: 
+# Indicates significant positive autocorrelation in the residuals, suggesting temporal dependencies not captured by the model.
+
+plot_train_pred(y_train = train_testm$y_train,
+                y_pred = predict(fit_MLR),
+                model_name = "Multiple Linear Regression")
+# Predictions align well with the observed values, indicating the model fits the training data reasonably well.
+# Peaks and troughs are captured, although minor discrepancies occur in highly fluctuating regions.
+
+plot_actual_vs_forecast(
+  actual = train_testm$y_test,
+  forecast = predict(fit_MLR, newdata = train_testm$test),
+  model_name = "Multiple Linear Regression"
+)
+# Forecasted values diverge significantly from actual test data for high peaks and deep troughs.
+# The model seems to underestimate sharp upward trends and overestimate downward trends, indicating limitations in capturing dynamics outside the training range.
 
 ## 5.2 ARIMAX ----
 fit_ARIMAX <- auto.arima(train_testm$y_train, xreg = as.numeric(train_testm$train$Month))
 summary(fit_ARIMAX)
 forecast_ARIMAX <- forecast(fit_ARIMAX, xreg = as.numeric(train_testm$test$Month))
 plot(forecast_ARIMAX)
+# The ARIMAX model predicts a linear increase in the values with wide confidence intervals. 
+# This is indicative of its inability to capture the seasonality or cyclic patterns present in the data.
 
 plot_actual_vs_forecast(
   actual = train_testm$y_test,
   forecast = as.numeric(forecast_ARIMAX$mean),
   model_name = "ARIMAX"
 )
+# The forecasted values are consistently below the actual test values, leading to a clear underestimation.
 
 ## 5.3 Gradient Boosting ----
 train_numeric <- train_testm$train %>%
