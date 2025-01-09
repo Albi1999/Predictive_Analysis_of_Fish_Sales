@@ -1,47 +1,57 @@
 # Fish Market Sales Analysis
 
-# LINEAR REGRESSION -- RIGA 231 circa
-# TODO: GUARDARE CON TEST DI SIGNIFICATIVITÁ SE POSSIAMO RIMUOVERE UNA VARIABILE 
-#       E.G.: TOLGO trainm$Year
-#       Imo usiamo drop1 e update peró meglio vedere cosa fa prof
+# TOTO 08/01/2025
+#   LINEAR REGRESSION
+#   TODO: GUARDARE CON TEST DI SIGNIFICATIVITÁ SE POSSIAMO RIMUOVERE UNA VARIABILE 
+#         E.G.: TOLGO trainm$Year
+#         Imo usiamo drop1 e update peró meglio vedere cosa fa prof
 
-# BASS Model  -- RIGA 243 circa
-# TODO: NON SO UN TUBO DEL BASS MODEL E MI É DIFFICILE ITERPRETARE I RISULTATI, 
-#       IN LINEA DI MASSIMA MI PARE FACCIA CAGARE
+#   BASS Model
+#   TODO: NON SO UN TUBO DEL BASS MODEL E MI É DIFFICILE ITERPRETARE I RISULTATI, 
+#         IN LINEA DI MASSIMA MI PARE FACCIA CAGARE
 
-# NEXT STEPS
-# TODO: INSERIRE VARIABILE DEL FISH CONSUMPTION NEI MODELLI IN CUI É POSSIBILE FARLO
-#       PROVARE NUOVI MODELLI-->GUARDARE CODICE PROF E SE POSSIBILE DOCUMENTAZION PERCHE CE ROBA FIGA
-#       TIPO QUELLO CHE HO TROVATO SU GAM
+#   NEXT STEPS
+#   TODO: INSERIRE VARIABILE DEL FISH CONSUMPTION NEI MODELLI IN CUI É POSSIBILE FARLO
+#         PROVARE NUOVI MODELLI-->GUARDARE CODICE PROF E SE POSSIBILE DOCUMENTAZION PERCHE CE ROBA FIGA
+#         TIPO QUELLO CHE HO TROVATO SU GAM
 
 
-
-# TODO: UNDERSTAND ALL THE MODEL ADDED AND COMMENT IT 
-#       ARIMA
-#       EXPONENTIAL SMOOTHING
-#       MULTIPLE LINEAR REGRESSION
-#       ARIMAX
-#       GRADIENT BOOSTING
-#       GENERALIZED BASS MODEL
+#   ALBI 09/01/2025
+#   TODO: UNDERSTAND ALL THE MODEL ADDED AND COMMENT IT 
+#         ARIMA
+#         EXPONENTIAL SMOOTHING
+#         MULTIPLE LINEAR REGRESSION
+#         ARIMAX
+#         GRADIENT BOOSTING
+#         GENERALIZED BASS MODEL
 #       
-#       DO SOME TUNING ON THE PARAMETERS OF THE MODELS AND UNDERSTAND THE RESULTS
+#         DO SOME TUNING ON THE PARAMETERS OF THE MODELS AND UNDERSTAND THE RESULTS
 
+#     TOTO 09/01/2025
+#       COMMENTO:
+#         - TEST NORMALITÁ CON library(olsrr) (funzione='ols_test_normality') la usa la prof? ha senso? cosa fa?
+#           stesso discorso vale per ols_test_correlation  e ols_test_breusch_pagan
 
 # Clear workspace
 rm(list = ls())
 
 # Load packages ----
 library(readxl)
+library(readr)
 library(ggplot2)
 library(tidyverse)
 library(dplyr)
 library(forecast)
 library(lubridate)
+library(olsrr) # test normality
 library(lmtest) # Durbin-Watson test
 library(DIMORA) # Bass Model
 library(mgcv) # GAM Model
 library(gbm) # Gradient Boosting Machine
 library(olsrr)
+
+setwd("D:/Projects_GitHub/BEFD_Project")
+source("Code/Functions_Utilies.R") # AM: CI RENDE QUESTO SCRIPT PIU PULITO
 
 # 1. Load Data ----
 
@@ -50,7 +60,7 @@ data$Date <- as.Date(data$Date, format = "%Y-%m-%d")
 
 # Check for NA values
 cat("NA counts in dataset:\n")
-print(colSums(is.na(data)))
+cat(paste(names(data), colSums(is.na(data)), sep=": "), sep="\n")
 # No NA in the dataset
 
 # Add features for time-based analysis
@@ -93,125 +103,7 @@ ggplot(fish_monthly_time_series, aes(x = Date, y = kg_std)) +
   scale_x_date(labels = scales::date_format("%b %Y"), breaks = "3 months") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-
-# USEFUL FUNCTIONS -----
-
-split_train_test <- function(data, name_y, prop) {
-  n_sample <- floor(nrow(data) * prop)
-  train <- data[1:n_sample, ]
-  y_train <- train[[name_y]]
-  test <- data[(n_sample + 1):nrow(data), ]
-  y_test <- test[[name_y]]
-  return(list(train = train, y_train = y_train, test = test, y_test = y_test))
-}
-
-plot_train_test <- function(train_test, name_y) {
-  train_length <- length(train_test$y_train)
-  test_length <- length(train_test$y_test)
-  time_index <- c(1:(train_length + test_length))
-  data_plot <- data.frame(
-    Time = time_index,
-    Value = c(as.numeric(train_test$y_train), as.numeric(train_test$y_test)),
-    Type = c(rep("Train", train_length), rep("Test", test_length))
-  )
-  ggplot(data_plot, aes(x = Time, y = Value, color = Type)) +
-    geom_line() +
-    labs(title = paste(name_y, ": Train vs Test"),
-         x = "Time",
-         y = "Value") +
-    scale_color_manual(values = c("Train" = "blue", "Test" = "red")) +
-    theme_minimal()
-}
-
-compute_AIC <- function(n, RSS, k) {
-  # GUARDA DOCUMENTAZIONE AIC: ?AIC
-  logLik <- -n / 2 * (log(2 * pi) + log(RSS / n) + 1)
-  AIC <- -2 * logLik + 2 * k
-  return(AIC)
-}
-
-plot_train_pred <- function(y_train, y_pred, model_name) {
-  plot_data <- data.frame(
-    Time = 1:length(y_train),
-    Observed = y_train,
-    Predicted = y_pred
-  )
-  ggplot(plot_data, aes(x = Time)) +
-    geom_line(aes(y = Observed), color = "blue", linewidth = 1) +
-    geom_line(aes(y = Predicted), color = "red", linewidth = 1) +
-    labs(
-      title = paste("Observed and Predicted Values\nModel:", model_name),
-      x = "Time",
-      y = "Values"
-    ) +
-    theme_minimal()
-}
-
-plot_actual_vs_forecast <- function(actual, forecast, model_name) {
-  forecast_data <- data.frame(
-    Time = 1:length(actual),
-    Actual = actual,
-    Forecast = forecast
-  )
-  ggplot(forecast_data, aes(x = Time)) +
-    geom_line(aes(y = Actual, color = "Actual"), linewidth = 1) +
-    geom_line(aes(y = Forecast, color = "Forecast"), linewidth = 1, linetype = "dashed") +
-    labs(
-      title = paste("Actual vs Forecasted Values\nModel:", model_name),
-      x = "Time",
-      y = "Values"
-    ) +
-    scale_color_manual(values = c("Actual" = "blue", "Forecast" = "red")) +
-    theme_minimal()
-}
-
-compute_metrics <- function(actual, predicted) {
-  mae <- mean(abs(actual - predicted))
-  rmse <- sqrt(mean((actual - predicted)^2))
-  return(list(MAE = mae, RMSE = rmse))
-}
-
-analyze_residuals <- function(residuals, model_name) {
-  par(mfrow = c(1, 3))
-  plot(residuals, main = paste("Residuals of", model_name), ylab = "Residuals")
-  acf(residuals, main = "ACF of Residuals")
-  hist(residuals, main = "Histogram of Residuals", breaks = 10, col = "gray")
-  par(mfrow = c(1, 1))
-}
-
-time_series_cv <- function(series, model_func, h = 12) {
-  n <- length(series)
-  errors <- numeric()
-  for (i in seq(n - h, by = 1)) {
-    train <- series[1:i]
-    test <- series[(i + 1):(i + h)]
-    model <- model_func(train)
-    pred <- forecast(model, h = h)$mean
-    errors <- c(errors, mean((test - pred)^2))
-  }
-  mean(errors)
-}
-
-grid_search <- function(model_func, param_grid, data) {
-  results <- list()
-  for (params in param_grid) {
-    model <- do.call(model_func, c(list(data), params))
-    results <- append(results, list(list(params = params, model = model)))
-  }
-  results
-}
-
-ensemble_forecast <- function(models, h = 12) {
-  forecasts <- lapply(models, function(model) forecast(model, h = h)$mean)
-  ensemble <- rowMeans(do.call(cbind, forecasts))
-  return(ensemble)
-}
-
-decompose_series <- function(series, type = "additive") {
-  decomposition <- decompose(ts(series, frequency = 12), type = type)
-  plot(decomposition)
-  return(decomposition)
-}
+data$fish_cons <- fish_monthly_time_series$kg_std
 
 
 # Plots ----
@@ -326,6 +218,21 @@ plot(res_LR_year_month, ylab="residuals")
 dwtest(fit_LR_year_month)
 # The DW statistic of 1.09 for the final model suggests positive autocorrelation in residuals, which violates regression assumptions.
 # TODO: I think this is BAD
+
+## -- BEST MODEL RIGTH NOW
+fit_LR_year_month_fish <- lm(y_train_m ~ tt + trainm$Year + trainm$Month + trainm$fish_cons)
+summary(fit_LR_year_month_fish)
+
+plot_train_pred(y_train = y_train_m,
+                y_pred = predict(fit_LR_year_month_fish),
+                model_name = "Linear Regression w/ Monthly, Year Seasonality and Fish Consumption")
+
+res_LR_year_month <- residuals(fit_LR_year_month_fish)
+plot(res_LR_year_month, ylab="residuals")
+abline(h = 0, col = "red")
+dwtest(fit_LR_year_month)
+acf(res_LR_year_month) # --> CE STAGIONALITÁ!!!!!!!!!!!!!!!
+
 
 # Residual Diagnostics
 ols_test_normality(fit_LR_year_month)
