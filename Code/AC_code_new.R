@@ -1,36 +1,36 @@
 # Fish Market Sales Analysis
 
 # TOTO 08/01/2025
-# LINEAR REGRESSION -- RIGA 231 circa
-# TODO: GUARDARE CON TEST DI SIGNIFICATIVITÁ SE POSSIAMO RIMUOVERE UNA VARIABILE 
-#       E.G.: TOLGO trainm$Year
-#       Imo usiamo drop1 e update peró meglio vedere cosa fa prof
+#   LINEAR REGRESSION
+#   TODO: GUARDARE CON TEST DI SIGNIFICATIVITÁ SE POSSIAMO RIMUOVERE UNA VARIABILE 
+#         E.G.: TOLGO trainm$Year
+#         Imo usiamo drop1 e update peró meglio vedere cosa fa prof
 
-# BASS Model  -- RIGA 243 circa
-# TODO: NON SO UN TUBO DEL BASS MODEL E MI É DIFFICILE ITERPRETARE I RISULTATI, 
-#       IN LINEA DI MASSIMA MI PARE FACCIA CAGARE
+#   BASS Model
+#   TODO: NON SO UN TUBO DEL BASS MODEL E MI É DIFFICILE ITERPRETARE I RISULTATI, 
+#         IN LINEA DI MASSIMA MI PARE FACCIA CAGARE
 
-# NEXT STEPS
-# TODO: INSERIRE VARIABILE DEL FISH CONSUMPTION NEI MODELLI IN CUI É POSSIBILE FARLO
-#       PROVARE NUOVI MODELLI-->GUARDARE CODICE PROF E SE POSSIBILE DOCUMENTAZION PERCHE CE ROBA FIGA
-#       TIPO QUELLO CHE HO TROVATO SU GAM
+#   NEXT STEPS
+#   TODO: INSERIRE VARIABILE DEL FISH CONSUMPTION NEI MODELLI IN CUI É POSSIBILE FARLO
+#         PROVARE NUOVI MODELLI-->GUARDARE CODICE PROF E SE POSSIBILE DOCUMENTAZION PERCHE CE ROBA FIGA
+#         TIPO QUELLO CHE HO TROVATO SU GAM
 
 
-# ALBI 09/01/2025
-# TODO: UNDERSTAND ALL THE MODEL ADDED AND COMMENT IT 
-#       ARIMA
-#       EXPONENTIAL SMOOTHING
-#       MULTIPLE LINEAR REGRESSION
-#       ARIMAX
-#       GRADIENT BOOSTING
-#       GENERALIZED BASS MODEL
+#   ALBI 09/01/2025
+#   TODO: UNDERSTAND ALL THE MODEL ADDED AND COMMENT IT 
+#         ARIMA
+#         EXPONENTIAL SMOOTHING
+#         MULTIPLE LINEAR REGRESSION
+#         ARIMAX
+#         GRADIENT BOOSTING
+#         GENERALIZED BASS MODEL
 #       
-#       DO SOME TUNING ON THE PARAMETERS OF THE MODELS AND UNDERSTAND THE RESULTS
+#         DO SOME TUNING ON THE PARAMETERS OF THE MODELS AND UNDERSTAND THE RESULTS
 
-#   TOTO 09/01/2025
-#   COMMENTO:
-#       - TEST NORMALITÁ CON library(olsrr) (funzione='ols_test_normality') la usa la prof? ha senso? cosa fa?
-#         stesso discorso vale per ols_test_correlation  e ols_test_breusch_pagan
+#     TOTO 09/01/2025
+#       COMMENTO:
+#         - TEST NORMALITÁ CON library(olsrr) (funzione='ols_test_normality') la usa la prof? ha senso? cosa fa?
+#           stesso discorso vale per ols_test_correlation  e ols_test_breusch_pagan
 
 # Clear workspace
 rm(list = ls())
@@ -48,11 +48,12 @@ library(lmtest) # Durbin-Watson test
 library(DIMORA) # Bass Model
 library(mgcv) # GAM Model
 library(gbm) # Gradient Boosting Machine
-source("Functions_Utilies.R") # AM: CI RENDE QUESTO SCRIPT PIU PULITO
+
+setwd("D:/Projects_GitHub/BEFD_Project")
+source("Code/Functions_Utilies.R") # AM: CI RENDE QUESTO SCRIPT PIU PULITO
 
 # 1. Load Data ----
 
-setwd("D:/Projects_GitHub/BEFD_Project")
 data <- read_csv("Data/data.csv")
 data$Date <- as.Date(data$Date, format = "%Y-%m-%d")
 
