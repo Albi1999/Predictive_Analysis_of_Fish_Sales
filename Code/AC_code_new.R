@@ -1,5 +1,6 @@
 # Fish Market Sales Analysis
 
+# TOTO 08/01/2025
 # LINEAR REGRESSION -- RIGA 231 circa
 # TODO: GUARDARE CON TEST DI SIGNIFICATIVITÁ SE POSSIAMO RIMUOVERE UNA VARIABILE 
 #       E.G.: TOLGO trainm$Year
@@ -15,7 +16,7 @@
 #       TIPO QUELLO CHE HO TROVATO SU GAM
 
 
-
+# ALBI 09/01/2025
 # TODO: UNDERSTAND ALL THE MODEL ADDED AND COMMENT IT 
 #       ARIMA
 #       EXPONENTIAL SMOOTHING
@@ -26,17 +27,23 @@
 #       
 #       DO SOME TUNING ON THE PARAMETERS OF THE MODELS AND UNDERSTAND THE RESULTS
 
+#   TOTO 09/01/2025
+#   COMMENTO:
+#       - TEST NORMALITÁ CON library(olsrr) (funzione='ols_test_normality') la usa la prof? ha senso? cosa fa?
+#         stesso discorso vale per ols_test_correlation  e ols_test_breusch_pagan
 
 # Clear workspace
 rm(list = ls())
 
 # Load packages ----
 library(readxl)
+library(readr)
 library(ggplot2)
 library(tidyverse)
 library(dplyr)
 library(forecast)
 library(lubridate)
+library(olsrr) # test normality
 library(lmtest) # Durbin-Watson test
 library(DIMORA) # Bass Model
 library(mgcv) # GAM Model
@@ -44,12 +51,13 @@ library(gbm) # Gradient Boosting Machine
 
 # 1. Load Data ----
 
+setwd("D:/Projects_GitHub/BEFD_Project")
 data <- read_csv("Data/data.csv")
 data$Date <- as.Date(data$Date, format = "%Y-%m-%d")
 
 # Check for NA values
 cat("NA counts in dataset:\n")
-print(colSums(is.na(data)))
+cat(paste(names(data), colSums(is.na(data)), sep=": "), sep="\n")
 # No NA in the dataset
 
 # Add features for time-based analysis
@@ -92,6 +100,7 @@ ggplot(fish_monthly_time_series, aes(x = Date, y = kg_std)) +
   scale_x_date(labels = scales::date_format("%b %Y"), breaks = "3 months") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
+data$fish_cons <- fish_monthly_time_series$kg_std
 
 # USEFUL FUNCTIONS -----
 
@@ -319,6 +328,21 @@ plot_train_pred(y_train = y_train_m,
 res_LR_year_month <- residuals(fit_LR_year_month)
 plot(res_LR_year_month, ylab="residuals")
 dwtest(fit_LR_year_month)
+
+## -- BEST MODEL RIGTH NOW
+fit_LR_year_month_fish <- lm(y_train_m ~ tt + trainm$Year + trainm$Month + trainm$fish_cons)
+summary(fit_LR_year_month_fish)
+
+plot_train_pred(y_train = y_train_m,
+                y_pred = predict(fit_LR_year_month_fish),
+                model_name = "Linear Regression w/ Monthly, Year Seasonality and Fish Consumption")
+
+res_LR_year_month <- residuals(fit_LR_year_month_fish)
+plot(res_LR_year_month, ylab="residuals")
+abline(h = 0, col = "red")
+dwtest(fit_LR_year_month)
+acf(res_LR_year_month) # --> CE STAGIONALITÁ!!!!!!!!!!!!!!!
+
 
 # Residual Diagnostics
 ols_test_normality(fit_LR_year_month)
