@@ -439,7 +439,6 @@ summary(fit_BM)
 
 forecast_Bass <- predict(fit_BM, newx = 1:(length(train_testm$y_train) + length(train_testm$y_test)))
 
-# Plot actual vs forecasted for Bass Model
 plot_actual_vs_forecast(
   actual = train_testm$y_test,
   forecast = forecast_Bass[1:length(train_testm$y_test)],  # Match test length
@@ -451,9 +450,20 @@ GGM_model <- GGM(train_testm$y_train, prelimestimates = c(10, 0.01, 0.1, 0.01, 0
 summary(GGM_model)
 forecast_GGM <- predict(GGM_model, newx = 1:(length(train_testm$y_train) + length(train_testm$y_test)))
 
-# Plot actual vs forecasted for Generalized Bass Model
 plot_actual_vs_forecast(
   actual = train_testm$y_test,
   forecast = forecast_GGM[1:length(train_testm$y_test)],  # Match test length
   model_name = "Generalized Bass Model"
 )
+
+# 7. Model Comparison ----
+actual <- train_testm$y_test
+results <- data.frame(
+  ARIMA = compute_metrics(actual, as.numeric(forecast_ARIMA$mean)),
+  ES = compute_metrics(actual, as.numeric(forecast_ES$mean)),
+  GAM = compute_metrics(actual, predict(gam_model, newdata = train_testm$test)),
+  Boosting = compute_metrics(actual, yhat_boost),
+  Bass = compute_metrics(actual, forecast_Bass)
+)
+print(t(results))
+
