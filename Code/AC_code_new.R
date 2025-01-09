@@ -31,6 +31,23 @@
 #       COMMENTO:
 #         - TEST NORMALITÁ CON library(olsrr) (funzione='ols_test_normality') la usa la prof? ha senso? cosa fa?
 #           stesso discorso vale per ols_test_correlation  e ols_test_breusch_pagan
+#         
+#       
+#    ALBI 09/01/2025
+#     START COMMENT
+#       La prof non lo usa ma ne avevo già parlato con lei e ha detto che possiamo usare 
+#       tutti i pacchetti che vogliamo basta che sappiamo cosa fanno e che non ci sono problemi
+#       ovviamente dobbiamo sapere cosa fanno e commentare di conseguenza i risultati
+
+help("ols_test_normality")
+help("olsrr")
+
+#       Comunque è un pacchetto per fare dei check sulla normalitá dei residui, sulla correlazione e sulla eteroschedasticitá delle variabili
+#       ovviamente non dobbiamo usare tutte le sue funzioni, io intanto le avevo messe
+#       La cosa figa però è i plot che fa come puoi vedere nella sezione della Linear Regression
+#       I plot li ho anche già commentati brevemente
+#     END COMMENT
+
 
 # Clear workspace
 rm(list = ls())
@@ -48,6 +65,7 @@ library(lmtest) # Durbin-Watson test
 library(DIMORA) # Bass Model
 library(mgcv) # GAM Model
 library(gbm) # Gradient Boosting Machine
+library(olsrr)
 
 setwd("D:/Projects_GitHub/BEFD_Project")
 source("Code/Functions_Utilies.R") # AM: CI RENDE QUESTO SCRIPT PIU PULITO
@@ -208,9 +226,15 @@ plot_train_pred(y_train = y_train_m,
                 y_pred = predict(fit_LR_year_month),
                 model_name = "Linear Regression w/ Monthly Seasonality")
 
+# Models with monthly seasonality ("Linear Regression w/ Monthly Seasonality") performed significantly better than the baseline trend-only model in terms of R-squared and adjusted R-squared.
+# The model with both yearly and monthly effects further improves the adjusted R-squared and has the lowest AIC (265.68), indicating the best fit among tested models.
+
+
 res_LR_year_month <- residuals(fit_LR_year_month)
 plot(res_LR_year_month, ylab="residuals")
 dwtest(fit_LR_year_month)
+# The DW statistic of 1.09 for the final model suggests positive autocorrelation in residuals, which violates regression assumptions.
+# TODO: I think this is BAD
 
 ## -- BEST MODEL RIGTH NOW
 fit_LR_year_month_fish <- lm(y_train_m ~ tt + trainm$Year + trainm$Month + trainm$fish_cons)
@@ -229,16 +253,23 @@ acf(res_LR_year_month) # --> CE STAGIONALITÁ!!!!!!!!!!!!!!!
 
 # Residual Diagnostics
 ols_test_normality(fit_LR_year_month)
+# Normality tests (Shapiro-Wilk, Anderson-Darling) confirm that residuals do not deviate significantly from normality, 
+# except for the Cramer-von Mises test (a stricter test).
 ols_test_correlation(fit_LR_year_month)
 ols_test_breusch_pagan(fit_LR_year_month)
 # ols_plot_diagnostics(fit_LR_year_month) # this integrate all the different plots below and more 
-ols_plot_cooksd_chart(fit_LR_year_month)
 ols_plot_resid_fit(fit_LR_year_month)
+# The residuals are randomly distributed around zero, which is desirable. 
+# However, there may be slight clustering, hinting at unexplained variability or trends.
 ols_plot_resid_stud_fit(fit_LR_year_month)
+# Observation 25 and 37 are flagged as outliers with high studentized residuals. 
+# These points may need further investigation.
+ols_plot_cooksd_chart(fit_LR_year_month)
 ols_plot_resid_lev(fit_LR_year_month)
+# Observations with high leverage (near the threshold) indicate data points that might heavily influence the model. 
+# Observation 37 is a standout and should be carefully considered for its impact.
 ols_plot_resid_hist(fit_LR_year_month)
-# we possibly need to deal with two outliers
-# observation 25 and 37 are outliers
+# The residuals appear to follow a roughly normal distribution, with some deviations at the tails.
 
 AIC(fit_LR_month)
 AIC(fit_LR_year)
@@ -250,6 +281,21 @@ AIC(fit_LR_year_month) # lower AIC-->best model
 train_series <- ts(train_testm$y_train, frequency = 12)
 fit_ARIMA <- auto.arima(train_series)
 summary(fit_ARIMA)
+# The chosen model by auto.arima is ARIMA(0,1,0)(1,1,0)[12], which means:
+#     Non-seasonal ARIMA terms: None for AR and MA (p=0, q=0) with first-order differencing (d=1).
+#     Seasonal ARIMA terms: One seasonal autoregressive term (P=1), seasonal differencing (D=1), and no seasonal moving average (Q=0) with a periodicity of 12 (likely monthly data).
+
+# The coefficient for the seasonal AR term is significant at -0.5504, indicating some level of negative autocorrelation between observations across seasonal cycles.
+
+# Model diagnostics:
+#   AIC = 196.27 and BIC = 199.07, both relatively low for a seasonal model.
+#   Residual ACF (last column of error measures) shows minimal correlation (-0.168), suggesting reasonably white noise residuals.
+
+# Training Set Error Metrics:
+#   Mean Absolute Error (MAE) = 3.12, Mean Percentage Error (MPE) = 1.22%, and Mean Absolute Percentage Error (MAPE) = 11.42%.
+#   RMSE (Root Mean Square Error) = 4.63, showing decent predictive power for this model on training data.
+
+
 forecast_ARIMA <- forecast(fit_ARIMA, h = length(train_testm$y_test))
 plot(forecast_ARIMA)
 
@@ -264,12 +310,16 @@ fit_ES <- ets(train_series)
 summary(fit_ES)
 forecast_ES <- forecast(fit_ES, h = length(train_testm$y_test))
 plot(forecast_ES)
+# The actual data seems to deviate significantly from the forecast's confidence bands in some regions, particularly suggesting either: 
+#     Misspecified seasonal patterns.
+#     Non-stationarity or non-linear trends not captured by the model.
 
 plot_actual_vs_forecast(
   actual = train_testm$y_test,
   forecast = as.numeric(forecast_ES$mean),
   model_name = "Exponential Smoothing"
 )
+# There is a clear discrepancy in the scale or trend alignment of the forecasts, particularly with over-forecasting for later periods.
 
 ## 4.4 GAM (Generalized Additive Model) ----
 gam_model <- gam(Baccala_Mantecato ~ s(as.numeric(Month)), data = trainm)
