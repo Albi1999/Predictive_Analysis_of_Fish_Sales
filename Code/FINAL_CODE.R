@@ -10,9 +10,11 @@ Upload only the sections of code that you are confident work correctly and are r
 rm(list=ls())
 library(readxl)
 library(readr)
+library(tidyverse)
 library(dplyr)
 library(ggplot2)
 library(gridExtra)
+library(lmtest)
 ```
 
 ```{r SETWD, warning=FALSE}
