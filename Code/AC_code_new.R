@@ -425,6 +425,12 @@ plot_actual_vs_forecast(
 )
 # The GAM forecast deviates from the actual test data, especially for the peaks and valleys, indicating limited extrapolation capability beyond the training range.
 
+
+## 4.5 KNN
+
+
+
+
 # 5. Multivariate Models ----
 
 ## 5.1 Multiple Linear Regression ----

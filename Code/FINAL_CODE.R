@@ -24,7 +24,7 @@ library(mgcv)
 base_path <- "D:/Projects_GitHub/BEFD_Project/" # Set base path
 ```
 
-## Data Loading and Preprocessing
+## Data Loading and Preprocessing ----
 
 ```{r DATA LOAD, message=FALSE, warning=FALSE}
 data <- read_csv(file.path(base_path, "Data/data.csv"))
@@ -76,7 +76,7 @@ data$fish_cons <- fish_cons$kg_std[,1]
 head(data,3)
 ```
 
-## Explanatory Analysis
+## Explanatory Analysis ----
 
 First, we visualize the time series of Baccala Mantecato and Baccala Vicentina over time.
 This plot helps us compare the trend of sales for both products on a monthly basis.
@@ -136,9 +136,8 @@ We now that autocorrelation occurs when the effect of a avriable is spread over 
 However, within the bands, the autocorrelations exhibit a sinusoidal pattern, suggesting the presence of seasonality in the data, where periodic fluctuations occur over time. The peak at lag 12 further supports the idea of a cyclical effect.
 We will analyze the residuals of future models to confirm or disprove the presence of this seasonality.
 
-## Train-Test Split
 
-# 3. TRAIN/TEST SPLIT ----
+# TRAIN/TEST SPLIT ----
 
 In this section, we perform a train-test split to prepare the data for model training and evaluation. We divide the time series data for both Baccala Mantecato and Baccala Vicentina into training and testing sets, with 90% of the data allocated for training and the remaining 10% for testing.
 
@@ -180,7 +179,7 @@ ggplot(data, aes(x = trend, y = Baccala_Vicentina, color = Type)) +
 
 ## Modelling Phase
 
-### Linear Regression Model
+### Linear Regression Model ----
 
 We start by estimating a simple linear regression model with all the possible variables
 ```{r}
@@ -272,9 +271,9 @@ The residuals appear to be randomly scattered, indicating that the model has app
 On the other hand we perform the Durbin-Watson test, that is used to check for autocorrelation in the residuals of a regression model.
 Since the p-value is greater than the significance level (0.05), we fail to reject the null hypothesis.
 
-## ARIMA Model
+## ARIMA Model ----
 
-## GAM Model
+## GAM Model ----
 
 ```{r}
 
@@ -284,7 +283,7 @@ gam_vicentina <- gam(Baccala_Vicentina ~  Month, data = train)
 summary(gam_vicentina)
 ```
 
-## ARMAX Model
+## ARMAX Model ----
 
 ```{r}
 armax1 <- Arima(train$Baccala_Mantecato, xreg= train$fish_cons, seasonal=list(order=c(0,1,0), period=12), order=c(0,1,1))
@@ -303,9 +302,59 @@ armax2 <- Arima(ts_m, xreg=train$fish_cons, order = c(0,1,1), seasonal = c(0,1,0
 summary(armax2)
 ```
 
+## Exponential Smoothing Model ----
 
+```{r}
+fit_ES <- ets(train_series)
+summary(fit_ES)
+AIC(fit_ES)
+```
+AIC = 304.7, AICc = 322.5, BIC = 331.1. 
+While the AIC is acceptable, higher BIC suggests the model may be overfitting due to complexity.
 
+Training Set Error:
+Mean Error (ME): -0.14, which is very close to zero, showing minimal bias in predictions.
+RMSE: 3.72 and MAPE: 10.78%. 
+Residual ACF (Autocorrelation):
+Residual ACF1 = 0.14, indicating a small but present autocorrelation in residuals. 
+This hints that the model hasn not fully captured temporal dependencies.
 
+```{r}
+forecast_ES <- forecast(fit_ES, h = length(train_testm$y_test))
+plot(forecast_ES)
+````
+### Exponential Smoothing Improvements with Fine-Tuning ----
+
+Include Additive and Multiplicative Seasonality using Holt-Winters
+
+```{r}
+fit_hw_mult <- hw(train_series, seasonal = "multiplicative")
+forecast_hw_mult <- forecast(fit_hw_mult, h = length(train_testm$y_test))
+summary(fit_hw_mult)
+```
+BAD AIC
+
+Fine-tune Holt-Winters Multiplicative Model
+
+```{r}
+fit_hw_mult_tuned <- ets(train_series, model = "MAM")
+forecast_hw_mult_tuned <- forecast(fit_hw_mult_tuned, h = length(train_testm$y_test))
+summary(fit_hw_mult_tuned)
+AIC(fit_hw_mult_tuned)
+```
+STILL BAD AIC
+
+Combine Results with Fish Consumption using Regression + ETS
+
+```{r}
+fit_reg <- lm(y_train_m ~ trainm$Month + trainm$Year + trainm$fish_cons)
+residuals_reg <- residuals(fit_reg)
+fit_res_ets <- ets(residuals_reg)
+summary(fit_reg) # Good R-squared
+AIC(fit_reg) # BEST AIC
+summary(fit_res_ets)
+AIC(fit_res_ets) # Worst AIC compared to the multiple linear regression :(
+```
 
 
 
