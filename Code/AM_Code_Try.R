@@ -132,8 +132,6 @@ We will analyze the residuals of future models to confirm or disprove the presen
 
 ## Train-Test Split
 
-# 3. TRAIN/TEST SPLIT ----
-
 In this section, we perform a train-test split to prepare the data for model training and evaluation. We divide the time series data for both Baccala Mantecato and Baccala Vicentina into training and testing sets, with 90% of the data allocated for training and the remaining 10% for testing.
 
 ```{r TRAIN-TEST SPLIT}
@@ -314,6 +312,7 @@ ggplot() +
 ```
 
 
+
 ### ARIMA Model
 
 #### Baccala Mantecato
@@ -343,26 +342,30 @@ Pacf(ts_m_12)
 ```
 
 Now, we will build two SARIMA models. The first model will incorporate a non-seasonal differencing (with d=1), one autoregressive term (AR(1)), and a seasonal differencing with a period of 12 (to account for the yearly seasonality). The second model will instead include a moving average (MA(1)) term along with the differencing.
+```{r}
+mse = function(pred, real){
+  mse = mean((real-pred)^2)
+  return(mse)
+}
+```
 
 ```{r}
 # SARIMA (1,1,0)(0,1,0)[12]
-sarima_model1m <- Arima(ts_m, order=c(1,1,0), seasonal=c(0,1,0))
+sarima_model1m <- Arima(ts_m, order=c(0,1,0), seasonal=c(0,1,0))
 summary(sarima_model1m)
+mse(test$Baccala_Mantecato, forecast(sarima_model1m, h = length(y_testm))$mean)
 
 # SARIMA (0,1,1)(0,1,0)[12]
 sarima_model2m <- Arima(ts_m, order=c(0,1,1), seasonal=c(0,1,0))
 summary(sarima_model2m)
-
-# SARIMA (0,1,1)(0,2,0)[12]
-sarima_model3m <- Arima(ts_m, order=c(0,1,1), seasonal=c(0,2,0))
-summary(sarima_model3m)
+mse(test$Baccala_Mantecato, forecast(sarima_model2m, h = length(y_testm))$mean)
 ```
-Based on the AIC values, the SARIMA (0,1,1)(0,2,0)[12] model is the better model. It has a lower AIC compared to the other SARIMA models.
+Based on the AIC values, the SARIMA (0,1,1)(0,1,0)[12] model is the better model. It has a lower AIC compared to the other SARIMA models.
 
 ```{r}
-resid3 <- residuals(sarima_model3m)
-Acf(resid3)
-Pacf(resid3)
+resid2 <- residuals(sarima_model2m)
+Acf(resid2)
+Pacf(resid2)
 ```
 
 #### Baccala Vicentina
@@ -389,47 +392,20 @@ Pacf(ts_v_12)
 This suggests that a SARIMA model with a seasonal period s=12, accounting for monthly data with yearly seasonality, might be appropriate for this time series.
 
 Now, we will build a SARIMA model model that incorporate only a seasonal differencing with a period of 12.
+The parameter D=2 lead us to lower AIC but a bigger mse, this is a case of overfitting.
 
 ```{r}
 # SARIMA (0,0,0)(0,1,0)[12]
-sarima_model1v <- Arima(ts_v, order=c(0,0,0), seasonal=c(0,1,0))
+sarima_model1v <- Arima(ts_v, order=c(0,1,1), seasonal=c(0,0,0))
 summary(sarima_model1v)
+mse(test$Baccala_Vicentina, forecast(sarima_model1v, h = length(y_testv))$mean)
+
 
 sarima_model2v <- Arima(ts_v, order=c(0,0,0), seasonal=c(0,2,2))
 summary(sarima_model2v)
-```
-```{r}
-library(ggplot2)
-
-forecast_model2 <- forecast(sarima_model2v, h = length(y_testv))
-
-ggplot() +
-  # Actual values
-  geom_line(aes(x = c(1:length(y_trainv), (length(y_trainv) + 1):(length(y_trainv) + length(y_testv))), 
-                y = c(y_trainv, y_testv), 
-                color = "Actual Values"), 
-            size = 1) +
-  geom_line(aes(x = 1:length(y_trainv), y = fitted(sarima_model2v), color = "Fitted (Model 2)"), size = 1) +
-  # Forecasted values (test set predictions)
-  geom_line(aes(x = (length(y_trainv) + 1):(length(y_trainv) + length(y_testv)), 
-                y = forecast_model2$mean, 
-                color = "Forecast (Model 2)"), size = 1, linetype = "dashed") +
-  labs(
-    title = "Actual, Fitted, and Forecasted Values",
-    x = "Time",
-    y = "Values",
-    color = "Legend"
-  ) +
-  theme_minimal() +
-  theme(legend.position = "bottom", text = element_text(size = 12))
-
+mse(test$Baccala_Vicentina, forecast(sarima_model2v, h = length(y_testv))$mean)
 ```
 
-```{r}
-resid2 <- residuals(sarima_model2v)
-Acf(resid2)
-Pacf(resid2)
-```
 Note: We also tried different configurations, expecially after we saw the residuals plot but at the end, this remain the best model possible.
 
 
