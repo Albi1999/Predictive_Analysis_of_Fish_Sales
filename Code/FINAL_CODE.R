@@ -8,6 +8,7 @@ Upload only the sections of code that you are confident work correctly and are r
 
 ```{r LIBRARIES, message=FALSE, warning=FALSE}
 rm(list=ls())
+
 library(readxl)
 library(readr)
 library(tidyverse)
@@ -15,6 +16,8 @@ library(dplyr)
 library(ggplot2)
 library(gridExtra)
 library(lmtest)
+library(mgcv)
+
 ```
 
 ```{r SETWD, warning=FALSE}
@@ -258,17 +261,47 @@ Finally we will analyze the residuals because...
 resid_lr <- residuals(lr_v)
 plot(resid_lr)
 ```
+
 ```{r}
 dwtest(lr_v)
 ```
 
-When we analyze the residuals of the linear regression model, as shown in the plot below, we observe no particular patterns. The residuals appear to be randomly scattered, indicating that the model has appropriately captured the underlying trends in the data. This suggests that the assumptions of linearity, constant variance, and independence are reasonably satisfied, and the model's fit is adequate for forecasting purposes.
+When we analyze the residuals of the linear regression model, as shown in the plot below, we observe no particular patterns. 
+The residuals appear to be randomly scattered, indicating that the model has appropriately captured the underlying trends in the data. This suggests that the assumptions of linearity, constant variance, and independence are reasonably satisfied, and the model's fit is adequate for forecasting purposes.
+
 On the other hand we perform the Durbin-Watson test, that is used to check for autocorrelation in the residuals of a regression model.
 Since the p-value is greater than the significance level (0.05), we fail to reject the null hypothesis.
 
 ## ARIMA Model
 
+## GAM Model
 
+```{r}
+
+gam_mantecato <- gam(Baccala_Mantecato ~  s(trend) + Month + s(fish_cons), data = train)
+summary(gam_mantecato)
+gam_vicentina <- gam(Baccala_Vicentina ~  Month, data = train)
+summary(gam_vicentina)
+```
+
+## ARMAX Model
+
+```{r}
+armax1 <- Arima(train$Baccala_Mantecato, xreg= train$fish_cons, seasonal=list(order=c(0,1,0), period=12), order=c(0,1,1))
+summary(armax1)
+
+res1<- residuals(armax1)
+Acf(res1)
+
+fitted(armax1)
+plot(train$Baccala_Mantecato)
+lines(fitted(armax1), col='red')
+AIC(armax2)
+
+ts_m <- ts(train$Baccala_Mantecato, start = c(2021,01), frequency = 12)
+armax2 <- Arima(ts_m, xreg=train$fish_cons, order = c(0,1,1), seasonal = c(0,1,0))
+summary(armax2)
+```
 
 
 
