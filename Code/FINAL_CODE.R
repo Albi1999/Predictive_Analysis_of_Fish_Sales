@@ -16,13 +16,14 @@ library(gridExtra)
 ```
 
 ```{r SETWD, warning=FALSE}
-base_path <- "D:/Projects_GitHub/BEFD_Project/Data" # Set base path
+base_path <- "D:/Projects_GitHub/BEFD_Project/" # Set base path
+source(file.path(base_path, "Code/Functions_Utilies.R"))
 ```
 
 ## Data Loading and Preprocessing
 
 ```{r DATA LOAD, message=FALSE, warning=FALSE}
-data <- read_csv(file.path(base_path, "data.csv"))
+data <- read_csv(file.path(base_path, "Data/data.csv"))
 data$Date <- as.Date(data$Date, format = "%Y-%m-%d") # ensure date format
 data <- data %>% mutate(Month = format(Date, "%m"),
                         Year = as.factor(format(Date, "%Y"))) # create useful features for the models
@@ -33,8 +34,7 @@ head(data,3)
 
 Check for missing values
 ```{r NAN CHECK}
-cat("NA counts in dataset:\n")
-cat(paste(names(data), colSums(is.na(data)), sep=": "), sep="\n")
+colSums(is.na(data))
 ```
 
 Then we load a dataset found on [EUMOFA](https://eumofa.eu/web/guest/bulk-download).
@@ -42,8 +42,8 @@ We also tried incorporating different variables, such as the NIC for fish produc
 Additionally, some other variables we tried do not have monthly data that match the frequency of the sales data we are working with, limiting their usefulness in the context of our time series analysis.
 
 Here we focus on the salmon consumption only because we have seen that other fishes or their aggregate value lead worst results.
-```{r}
-fish_cons <- read_excel(file.path(base_path, "Fish_consumption_ita_raw.xlsx")) %>%
+```{r FISH LOAD}
+fish_cons <- read_excel(file.path(base_path, "Data/Fish_consumption_ita_raw.xlsx")) %>%
   filter(CG == "Salmon") %>%
   mutate(kg = as.numeric(`volume(Kg)`)) %>%
   group_by(year, month) %>%
@@ -67,7 +67,7 @@ kg_std: Represents the standardized version of the kg column. Since the values i
 kg: Represents the quantity of salmon sold in Italy, measured in kilograms.
 
 Finally we aggregate the salmon monthly consumption time series to our data.
-```{r}
+```{r ASSIGN KG_STD TO DATA}
 data$fish_cons <- fish_cons$kg_std
 head(data,3)
 ```
@@ -77,7 +77,7 @@ head(data,3)
 First, we visualize the time series of Baccala Mantecato and Baccala Vicentina over time.
 This plot helps us compare the trend of sales for both products on a monthly basis.
 
-```{r PLOT BACCALA fig.width=10}
+```{r message=FALSE, warning=FALSE, PLOT BACCALA fig.width=10}
 ggplot(data, aes(x = Date)) +
   geom_line(aes(y = Baccala_Mantecato, color = "Baccala Mantecato"), size = 1) +
   geom_line(aes(y = Baccala_Vicentina, color = "Baccala Vicentina"), size = 1) +
@@ -113,12 +113,16 @@ Additionally, regarding Baccala Mantecato, it appears that during the earlier ye
 
 Finally, we also examined the properties of the time series by plotting the autocorrelation functions (ACF).
 
-```{r}
+```{r ACF TS}
 ym = ts(data$Baccala_Mantecato, frequency = 12, start = c(2021, 1))
 yv = ts(data$Baccala_Vicentina, frequency = 12, start = c(2021, 1))
 
-end(ym) #-->is 2024/12?
-end(yv) #-->is 2024/12?
+if (end(ym)[1] != 2024 || end(ym)[2] != 12) {
+  print("Error in ts ym")
+}
+if (end(yv)[1] != 2024 || end(yv)[2] != 12) {
+  print("Error in ts yv")
+}
 
 acf(data$Baccala_Mantecato, main = "ACF of Baccala Mantecato", col = "blue", lwd = 2)
 acf(data$Baccala_Vicentina, main = "ACF of Baccala Vicentina", col = "red", lwd = 2)
@@ -127,6 +131,33 @@ acf(data$Baccala_Vicentina, main = "ACF of Baccala Vicentina", col = "red", lwd 
 We now that autocorrelation occurs when the effect of a avriable is spread over time, in these cases, most of the autocorrelations fall within the confidence bands, indicating that the data does not show significant correlation for most lags. 
 However, within the bands, the autocorrelations exhibit a sinusoidal pattern, suggesting the presence of seasonality in the data, where periodic fluctuations occur over time. The peak at lag 12 further supports the idea of a cyclical effect.
 We will analyze the residuals of future models to confirm or disprove the presence of this seasonality.
+
+## Train-Test Split
+
+# 3. TRAIN/TEST SPLIT ----
+
+In this section, we perform a train-test split to prepare the data for model training and evaluation. We divide the time series data for both Baccala Mantecato and Baccala Vicentina into training and testing sets, with 90% of the data allocated for training and the remaining 10% for testing.
+
+```{r TRAIN-TEST SPLIT}
+prop <- 0.8
+train_testm <- split_train_test(data, "Baccala_Mantecato", prop)
+plot_train_test(train_testm, "Baccala_Mantecato")
+
+train_testv <- split_train_test(data, "Baccala_Vicentina", prop)
+plot_train_test(train_testv, "Baccala_Vicentina")
+
+trainm = train_testm$train
+y_train_m = train_testm$y_train
+testm = train_testm$test
+y_test_m = train_testm$y_test
+
+trainv = train_testv$train
+y_train_v = train_testv$y_train
+testv = train_testv$test
+y_test_v = train_testv$y_test
+```
+
+## Modelling Phase
 
 
 
