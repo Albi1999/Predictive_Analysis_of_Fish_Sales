@@ -314,7 +314,9 @@ ggplot() +
 ```
 
 
-## ARIMA Model
+### ARIMA Model
+
+#### Baccala Mantecato
 
 To begin, we first transform the sales data of Baccalá Mantecato into a time series object:
 
@@ -344,26 +346,91 @@ Now, we will build two SARIMA models. The first model will incorporate a non-sea
 
 ```{r}
 # SARIMA (1,1,0)(0,1,0)[12]
-sarima_model1 <- Arima(ts_m, order=c(1,1,0), seasonal=c(0,1,0))
-summary(sarima_model1)
+sarima_model1m <- Arima(ts_m, order=c(1,1,0), seasonal=c(0,1,0))
+summary(sarima_model1m)
 
 # SARIMA (0,1,1)(0,1,0)[12]
-sarima_model2 <- Arima(ts_m, order=c(0,1,1), seasonal=c(0,1,0))
-summary(sarima_model2)
+sarima_model2m <- Arima(ts_m, order=c(0,1,1), seasonal=c(0,1,0))
+summary(sarima_model2m)
+
+# SARIMA (0,1,1)(0,2,0)[12]
+sarima_model3m <- Arima(ts_m, order=c(0,1,1), seasonal=c(0,2,0))
+summary(sarima_model3m)
 ```
-Based on the AIC values, the SARIMA (0,1,1)(0,1,0)[12] model is the better model. It has a lower AIC value of 164.89, compared to the SARIMA (1,1,0)(0,1,0)[12] model,
+Based on the AIC values, the SARIMA (0,1,1)(0,2,0)[12] model is the better model. It has a lower AIC compared to the other SARIMA models.
 
 ```{r}
-resid2 <- residuals(sarima_model2)
+resid3 <- residuals(sarima_model3m)
+Acf(resid3)
+Pacf(resid3)
+```
+
+#### Baccala Vicentina
+
+To begin, we first transform the sales data of Baccalá Vicentina into a time series object:
+
+```{r message=FALSE, warning=FALSE}
+ts_v <- ts(train$Baccala_Vicentina, start = c(2021, 01), frequency = 12)
+plot.ts(ts_v)
+```
+
+```{r}
+Acf(ts_v)
+Pacf(ts_v)
+```
+
+From the plot above we clearly notice the presence of seasonality that is confirmed by the pacf and acf functions with a significant spike at lag 12.
+
+```{r}
+ts_v_12 <- diff(ts_v, lag = 12)
+Acf(ts_v_12)
+Pacf(ts_v_12)
+```
+This suggests that a SARIMA model with a seasonal period s=12, accounting for monthly data with yearly seasonality, might be appropriate for this time series.
+
+Now, we will build a SARIMA model model that incorporate only a seasonal differencing with a period of 12.
+
+```{r}
+# SARIMA (0,0,0)(0,1,0)[12]
+sarima_model1v <- Arima(ts_v, order=c(0,0,0), seasonal=c(0,1,0))
+summary(sarima_model1v)
+
+sarima_model2v <- Arima(ts_v, order=c(0,0,0), seasonal=c(0,2,2))
+summary(sarima_model2v)
+```
+```{r}
+library(ggplot2)
+
+forecast_model2 <- forecast(sarima_model2v, h = length(y_testv))
+
+ggplot() +
+  # Actual values
+  geom_line(aes(x = c(1:length(y_trainv), (length(y_trainv) + 1):(length(y_trainv) + length(y_testv))), 
+                y = c(y_trainv, y_testv), 
+                color = "Actual Values"), 
+            size = 1) +
+  geom_line(aes(x = 1:length(y_trainv), y = fitted(sarima_model2v), color = "Fitted (Model 2)"), size = 1) +
+  # Forecasted values (test set predictions)
+  geom_line(aes(x = (length(y_trainv) + 1):(length(y_trainv) + length(y_testv)), 
+                y = forecast_model2$mean, 
+                color = "Forecast (Model 2)"), size = 1, linetype = "dashed") +
+  labs(
+    title = "Actual, Fitted, and Forecasted Values",
+    x = "Time",
+    y = "Values",
+    color = "Legend"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", text = element_text(size = 12))
+
+```
+
+```{r}
+resid2 <- residuals(sarima_model2v)
 Acf(resid2)
 Pacf(resid2)
 ```
-
-
-```{r}
-ts_v <- ts(data$Baccala_Vicentina, start = c(2021, 01), frequency = 12)
-```
-
+Note: We also tried different configurations, expecially after we saw the residuals plot but at the end, this remain the best model possible.
 
 
 
