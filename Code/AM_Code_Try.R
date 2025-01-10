@@ -1,312 +1,318 @@
-# First code, just to see the data plot and fit a couple of models to see how they perform
+Upload only the sections of code that you are confident work correctly and are ready for submission in the exam. Include comments where possible for better clarity and understanding.
 
-# LINEAR REGRESSION -- RIGA 231 circa
-# TODO: GUARDARE CON TEST DI SIGNIFICATIVITÁ SE POSSIAMO RIMUOVERE UNA VARIABILE 
-#       E.G.: TOLGO trainm$Year
-#       Imo usiamo drop1 e update peró meglio vedere cosa fa prof
 
-# BASS Model  -- RIGA 243 circa
-# TODO: NON SO UN TUBO DEL BASS MODEL E MI É DIFFICILE ITERPRETARE I RISULTATI, 
-#       IN LINEA DI MASSIMA MI PARE FACCIA CAGARE
+# Analysis of Baccala Mantecato and Baccala alla Vicentina
 
-# NEXT STEPS
-# TODO: INSERIRE VARIABILE DEL FISH CONSUMPTION NEI MODELLI IN CUI É POSSIBILE FARLO
-#       PROVARE NUOVI MODELLI-->GUARDARE CODICE PROF E SE POSSIBILE DOCUMENTAZION PERCHE CE ROBA FIGA
-#       TIPO QUELLO CHE HO TROVATO SU GAM
+## Package Loading and General Configuration
 
+```{r LIBRARIES, message=FALSE, warning=FALSE}
 rm(list=ls())
-
-################################################################################
-# Load packages ----
-################################################################################
-
 library(readxl)
-library(ggplot2)
-library(tidyverse)
+library(readr)
 library(dplyr)
-library(forecast)
-library(lubridate)
-library(lmtest) # DW test
-library(DIMORA) # BASS Model
-library(mgcv) # GAM Model
+library(ggplot2)
+library(gridExtra)
+```
 
-################################################################################
-# USEFUL FUNCTIONS
-################################################################################
+```{r SETWD, warning=FALSE}
+base_path <- "D:/Projects_GitHub/BEFD_Project/" # Set base path
+```
 
-split_train_test = function(data, name_y, prop){
-  n_sample = floor(nrow(data)*prop)
-  
-  train = data[1:n_sample, ]
-  y_train = train[[name_y]]
-  
-  test = data[(n_sample+1):nrow(data),]
-  y_test = test[[name_y]]
-  
-  
-  return(list(train = train, y_train = y_train, test = test, y_test = y_test))
-}
+## Data Loading and Preprocessing
 
-plot_train_test = function(train_test, name_y){
-  train_length <- length(train_test$y_train)
-  test_length <- length(train_test$y_test)
-  time_index <- c(1:(train_length + test_length))
-  
-  data_plot <- data.frame(
-    Time = time_index,
-    Value = c(as.numeric(train_test$y_train), as.numeric(train_test$y_test)),
-    Type = c(rep("Train", train_length), rep("Test", test_length))
-  )
-  
-  ggplot(data_plot, aes(x = Time, y = Value, color = Type)) +
-    geom_line() +
-    labs(title = paste(name_y, ": Train vs Test"),
-         x = "Tempo",
-         y = "Valore") +
-    scale_color_manual(values = c("Train" = "blue", "Test" = "red")) +
-    theme_minimal()
-}
+```{r DATA LOAD, message=FALSE, warning=FALSE}
+data <- read_csv(file.path(base_path, "Data/data.csv"))
+data$Date <- as.Date(data$Date, format = "%Y-%m-%d") # ensure date format
+data <- data %>% mutate(Month = format(Date, "%m"),
+                        Year = as.factor(format(Date, "%Y"))) # create useful features for the models
+data$trend <- 1:nrow(data)
 
-compute_AIC <- function(n, RSS, k) {
-  
-  # GUARDA DOCUMENTAZIONE AIC: ?AIC
-  logLik <- -n / 2 * (log(2 * pi) + log(RSS / n) + 1)
-  AIC <- -2 * logLik + 2 * k
-  
-  return(AIC)
-}
+head(data,3)
+```
 
-
-plot_train_pred <- function(y_train,
-                            y_pred,
-                            model_name){
-  plot_data = data.frame(
-    Time = 1:length(y_train), 
-    Observed = y_train,
-    Predicted = y_pred)
-  
-  ggplot(plot_data, aes(x = Time)) +
-    geom_line(aes(y = Observed),
-              color = "blue", linewidth = 1) + 
-    geom_line(aes(y = Predicted), color = "red",
-              linewidth = 1) + 
-    labs(
-      title = paste("Observed and Predicted Values\nModel:",model_name),
-      x = "Time",
-      y = "Values"
-    ) +
-    theme_minimal()
-}
-################################################################################
-
-################################################################################
-# Load Data and Manipulation
-################################################################################
-
-data <- read_csv("Data/data.csv")
-
-# Trasforma la colonna 'Date' in formato Date
-data$Date <- as.Date(data$Date, format = "%Y-%m-%d")
-
-# Check for NA values
+Check for missing values
+```{r NAN CHECK}
 colSums(is.na(data))
+```
 
-data <- data %>%
-  mutate(Month = format(Date, "%m"),
-         Year = as.factor(format(Date, "%Y"))
-  )
+Then we load a dataset found on [EUMOFA](https://eumofa.eu/web/guest/bulk-download).
+We also tried incorporating different variables, such as the NIC for fish products (Istat), the production price of fish products (Istat), and others. However, these variables did not prove to be significantly relevant for our analysis.
+Additionally, some other variables we tried do not have monthly data that match the frequency of the sales data we are working with, limiting their usefulness in the context of our time series analysis.
 
-head(data)
-
-################################################################################
-# LOAD DATA 2 --> variabile esplicativa
-################################################################################
-
-monthly_consumption <- read_excel("Data/Fish_consumption_ita_raw.xlsx")
-
-monthly_consumption <- monthly_consumption %>% filter(CG == "Salmon")
-
-monthly_consumption <- monthly_consumption %>%
-  mutate(kg = as.numeric(`volume(Kg)`)) 
-str(monthly_consumption)
-
-monthly_time_series <- monthly_consumption %>%
+Here we focus on the salmon consumption only because we have seen that other fishes or their aggregate value lead worst results.
+```{r FISH LOAD}
+fish_cons <- read_excel(file.path(base_path, "Data/Fish_consumption_ita_raw.xlsx")) %>%
+  filter(CG == "Salmon") %>%
+  mutate(kg = as.numeric(`volume(Kg)`)) %>%
   group_by(year, month) %>%
-  summarise(kg = sum(kg)) %>%
-  ungroup()
+  summarise(kg = sum(kg), .groups = "drop") %>%
+  filter(year > 2020 | (year == 2020 & month %in% c(11, 12))) %>%
+  mutate(
+    kg_std = scale(kg),
+    Date = as.Date(paste(year, month, "01", sep = "-"))
+  )  %>%
+  select(Date, kg, kg_std)
 
-monthly_time_series <- monthly_time_series %>%
-  filter(year > 2020 | (year == 2020 & month %in% c(11, 12)))
+head(fish_cons, 3)
+```
 
-# Std
-monthly_time_series <- monthly_time_series %>%
-  mutate(kg_std = as.vector(scale(kg)))
+The dataset contains three columns:
 
-monthly_time_series$Date <- as.Date(paste(monthly_time_series$year, monthly_time_series$month, "01", sep = "-"))
+Date: Unlike the data related to baccalà, the time series for salmon starts from November 2020. This is because we lack information for the last two months of 2024, so we applied a two-month lag. This choice also makes sense for future applications, as it would not be possible to forecast baccalà sales (whether mantecato or alla vicentina) for December when monthly consumption data for that month is already available.
 
-head(monthly_time_series)
+kg_std: Represents the standardized version of the kg column. Since the values in kg are quite large, we opted to standardize them to simplify further analysis.
 
-ggplot(monthly_time_series, aes(x = Date, y = kg_std)) +
-  geom_line(color = 'blue') +
-  labs(title = 'Time Series of Consumed Kg (Salmon)', 
-       x = 'Data', 
-       y = 'Kg Consumed') +
-  theme_minimal() +
-  scale_x_date(labels = scales::date_format("%b %Y"), breaks = "3 months") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+kg: Represents the quantity of salmon sold in Italy, measured in kilograms.
 
-################################################################################
-# Plots
-################################################################################
+Finally we aggregate the salmon monthly consumption time series to our data.
+```{r ASSIGN KG_STD TO DATA}
+data$fish_cons <- fish_cons$kg_std[,1]
+head(data,3)
+```
 
+## Explanatory Analysis
+
+First, we visualize the time series of Baccala Mantecato and Baccala Vicentina over time.
+This plot helps us compare the trend of sales for both products on a monthly basis.
+
+```{r message=FALSE, warning=FALSE, PLOT BACCALA fig.width=10}
 ggplot(data, aes(x = Date)) +
-  geom_line(aes(y = Baccala_Mantecato, color = "Baccala Mantecato")) +
-  geom_line(aes(y = Baccala_Vicentina, color = "Baccala Vicentina")) +
-  labs(title = "Time Series of Baccala Mantecato and Baccala Vicentina",
+  geom_line(aes(y = Baccala_Mantecato, color = "Baccala Mantecato"), size = 1) +
+  geom_line(aes(y = Baccala_Vicentina, color = "Baccala Vicentina"), size = 1) +
+  labs(title = "Monthly Time Series of Baccala Mantecato and Baccala Vicentina",
        x = "Date",
        y = "Quantity") +
-  scale_color_manual(values = c("Baccala Mantecato" = "blue", "Baccala Vicentina" = "red"),
-                     name = "Kind") +
   theme_minimal()
+```
+The sales quantities of Baccala Mantecato and Baccala Vicentina show significant differences, with Baccala Mantecato consistently having a much higher volume of sales throughout all periods observed. Additionally, Baccala Mantecato exhibits a much wider range of values, indicating greater variability in sales. In contrast, Baccala Vicentina appears more stable, with sales peaks typically occurring towards the end of the year. A similar trend is also seen for Baccala Mantecato, which experiences an uptick in sales during the final months of each year.
 
+Next, we plot the time series for both products grouped by year.
+The goal is to observe yearly trends and patterns for Baccala Mantecato and Baccala Vicentina separately.
 
-ggplot(data, aes(x = Month, y = Baccala_Mantecato, color = Year, group = Year)) +
+```{r PLOT BACCALA GROUP BY YEAR fig.width=10}
+plot1 <- ggplot(data, aes(x = Month, y = Baccala_Mantecato, color = Year, group = Year)) +
   geom_line() + 
-  labs(x = "Days from Start of Year", y = "Baccala_Mantecato", 
-       title = "Time Series for Each Year") +
+  labs(x = "Month", y = "Baccala Mantecato", 
+       title = "Monthly Time Series of Baccala Mantecato by Year") +
   theme_minimal() +
   theme(legend.title = element_blank())
 
-ggplot(data, aes(x = Month, y = Baccala_Vicentina, color = Year, group = Year)) +
+plot2 <- ggplot(data, aes(x = Month, y = Baccala_Vicentina, color = Year, group = Year)) +
+  geom_line() + 
+  labs(x = "Month", y = "Baccala Vicentina", 
+       title = "Monthly Time Series of Baccala Vicentina by Year") +
+  theme_minimal() +
+  theme(legend.title = element_blank())
+
+grid.arrange(plot1, plot2, nrow = 2)
+```
+Both graphs highlight the pattern mentioned earlier: for each year, there is an increase in sales during the final months of the year, particularly in September and December. 
+Additionally, regarding Baccala Mantecato, it appears that during the earlier years of sales for which we have data, the quantity sold was generally higher in the off-peak months (for example, the orange line for 2021 is higher compared to the other years). However, in the later years, the quantity sold during the peak months has increased.
+
+Finally, we also examined the properties of the time series by plotting the autocorrelation functions (ACF).
+
+```{r ACF TS}
+ym = ts(data$Baccala_Mantecato, frequency = 12, start = c(2021, 1))
+yv = ts(data$Baccala_Vicentina, frequency = 12, start = c(2021, 1))
+
+if (end(ym)[1] != 2024 || end(ym)[2] != 12) {
+  print("Error in ts ym")
+}
+if (end(yv)[1] != 2024 || end(yv)[2] != 12) {
+  print("Error in ts yv")
+}
+
+acf(data$Baccala_Mantecato, main = "ACF of Baccala Mantecato", col = "blue", lwd = 2)
+acf(data$Baccala_Vicentina, main = "ACF of Baccala Vicentina", col = "red", lwd = 2)
+```
+
+We now that autocorrelation occurs when the effect of a avriable is spread over time, in these cases, most of the autocorrelations fall within the confidence bands, indicating that the data does not show significant correlation for most lags. 
+However, within the bands, the autocorrelations exhibit a sinusoidal pattern, suggesting the presence of seasonality in the data, where periodic fluctuations occur over time. The peak at lag 12 further supports the idea of a cyclical effect.
+We will analyze the residuals of future models to confirm or disprove the presence of this seasonality.
+
+## Train-Test Split
+
+# 3. TRAIN/TEST SPLIT ----
+
+In this section, we perform a train-test split to prepare the data for model training and evaluation. We divide the time series data for both Baccala Mantecato and Baccala Vicentina into training and testing sets, with 90% of the data allocated for training and the remaining 10% for testing.
+
+```{r TRAIN-TEST SPLIT}
+prop <- 0.8
+
+n_sample <- floor(nrow(data) * prop)
+  
+train <- data[1:n_sample, ]
+y_trainm <- train[["Baccala_Mantecato"]]
+y_trainv <- train[["Baccala_Vicentina"]]
+  
+test <- data[(n_sample + 1):nrow(data), ]
+  
+y_testm <- test[["Baccala_Mantecato"]]
+y_testv <- test[["Baccala_Vicentina"]]
+```
+
+```{r TRAIN-TEST PLOT}
+Type = c(rep("Train", dim(train)[1]), rep("Test", dim(test)[1]))
+ggplot(data, aes(x = trend, y = Baccala_Mantecato, color = Type)) +
   geom_line() +
-  labs(x = "Month of the Year", y = "Baccala_Vicentina", 
-       title = "Time Series for Each Year") +
+  scale_color_manual(values = c("red", "blue")) +
+  labs(title = "Train and Test Data for Baccala Mantecato",
+       x = "Time",
+       y = "Quantity sold of Baccala Mantecato") +
   theme_minimal() +
   theme(legend.title = element_blank())
 
-################################################################################
-# TS Properties
-################################################################################
+ggplot(data, aes(x = trend, y = Baccala_Vicentina, color = Type)) +
+  geom_line() +
+  scale_color_manual(values = c("red", "blue")) +
+  labs(title = "Train and Test Data for Baccala Vicentinao",
+       x = "Time",
+       y = "Quantity sold of Baccala Vicentina") +
+  theme_minimal() +
+  theme(legend.title = element_blank())
+```
 
-ym = ts(data$Baccala_Mantecato, frequency = 12, start = c(2020,01))
-yv = ts(data$Baccala_Vicentina, frequency = 12, start = c(2020,01))
+## Modelling Phase
 
-plot.ts(yv)
-plot.ts(ym)
+### Linear Regression Model
 
-# Stationary check
-acf(data$Baccala_Mantecato)
-acf(data$Baccala_Vicentina)
+We start by estimating a simple linear regression model with all the possible variables
+```{r}
+lr_m <- lm(Baccala_Mantecato ~ trend + Month + fish_cons, data = train)
+summary(lr_m)
+```
 
-################################################################################
-# ** TRAIN/TEST SPLIT **
-################################################################################
+The Multiple R-squared value of 0.9178 indicates that approximately 91.78% of the variability in Baccala_Mantecato is explained by the model.
+Then we take a closer look to the coefficents:
+- the trend variable has a positive coefficient of 0.18, meaning that, on average, Baccala_Mantecato increases by 0.18 units for each time period, assuming all other factors remain constant.
+-The coefficient for fish_cons is 7.79, indicating a strong positive relationship. Specifically, for each unit increase in fish consumption, Baccala_Mantecato rises by approximately 7.79 units. In particular we will provide an exemple: if the fish consumption in Italy increases by a unit in October 2021, then keeping all the other variables fixed, the quantity sold in December 2021 will increase of 7.79 kg.
+- Regarding the Month variables, they capture seasonal effects by representing deviations from the baseline month (January). Some months show statistically significant effects (e.g., February, August, September, October, and December. For example, December shows a substantial positive effect, indicating a peak in that month, while months like February and October have negative coefficients, reflecting significant declines compared to January.
 
+Now we try removing variables to evaluate their impact on model performance using AIC and adjusted R² values.
 
-train_testm <- split_train_test(data, "Baccala_Mantecato", 0.9)
-plot_train_test(train_testm, "Baccala_Mantecato")
+```{r}
+lr_m_month <- lm(Baccala_Mantecato ~ trend + fish_cons, data = train)
+lr_m_trend <- lm(Baccala_Mantecato ~ Month + fish_cons, data = train)
+lr_m_fish_cons <- lm(Baccala_Mantecato ~ trend + Month, data = train)
 
-train_testv <- split_train_test(data, "Baccala_Vicentina", 0.9)
-plot_train_test(train_testv, "Baccala_Vicentina")
+cat("Model with trend and fish consumption:\n")
+cat("  AIC:", AIC(lr_m_month), "\n")
+cat("  Adjusted R²:", summary(lr_m_month)$adj.r.squared, "\n\n")
 
-trainm = train_testm$train
-y_train_m = train_testm$y_train
-testm = train_testm$test
-y_test_m = train_testm$y_test
+cat("Model with trend and month:\n")
+cat("  AIC:", AIC(lr_m_fish_cons), "\n")
+cat("  Adjusted R²:", summary(lr_m_fish_cons)$adj.r.squared, "\n\n")
 
-trainv = train_testv$train
-y_train_v = train_testv$y_train
-testv = train_testv$test
-y_test_v = train_testv$y_test
+cat("Model with month and fish consumption:\n")
+cat("  AIC:", AIC(lr_m_trend), "\n")
+cat("  Adjusted R²:", summary(lr_m_trend)$adj.r.squared, "\n\n")
 
-################################################################################
-# ** Linear Regression MODEL **
-################################################################################
+cat("Full model:\n")
+cat("  AIC:", AIC(lr_m), "\n")
+cat("  Adjusted R²:", summary(lr_m)$adj.r.squared, "\n")
+```
+From the results above we clearly see that the best model fit belong to the full model with all predictors: trend, monthly seasonality and fish consumption.
 
-tt = 1:nrow(trainm)
+The same analysis is conducted below for the Baccala Vicentina variable.
 
-fit_LR_trend <- lm(y_train_m ~ tt)
-summary(fit_LR_trend)
+```{r}
+lr_v_full <- lm(Baccala_Vicentina ~ trend + Month + fish_cons, data = train)
+summary(lr_v_full)
+```
 
-plot_train_pred(y_train = y_train_m,
-                y_pred = predict(fit_LR_trend),
-                model_name = "Linear Regression w/ Monthly Seasonality")
-##
+This time the fish consumption seems to be not useful to imporve the model pefromance so we remove it
 
-fit_LR_month <- lm(y_train_m ~ tt + trainm$Month)
-summary(fit_LR_month)
+```{r}
+lr_v <- update(lr_v_full, .~. - fish_cons)
+summary(lr_v)
+```
+The adjusted R² increses from 0.8261 to 0.8305 suggesting that the reduced model is better than the full one. 
+Furthermore, the trend variable shows a large p-value, suggesting that it can be removed from the model without significantly affecting the results.
 
-plot_train_pred(y_train = y_train_m,
-                y_pred = predict(fit_LR_month),
-                model_name = "Linear Regression w/ Monthly Seasonality")
+```{r}
+lr_v <- update(lr_v, .~. - trend)
+summary(lr_v)
+```
 
-##
+The best model for the Baccala Vicentina series is the one that includes only the monthly seasonality. This model provides the best fit, indicating that the variations in the data are primarily driven by seasonal effects, without the need for additional trend or other predictors.
+Moreover, the fitted model is statistically significant, as shown by the F-statistic of 18.21, with a p-value of 1.684e-09, confirming the model's overall significance.
 
-fit_LR_year <- lm(y_train_m ~ tt + trainm$Year)
-summary(fit_LR_year)
+Below, we compare the difference in AIC and adjusted R² between the full model and the one with only the monthly seasonality.
+```{r}
+cat("Model with month:\n")
+cat("  AIC:", AIC(lr_v), "\n")
+cat("  Adjusted R²:", summary(lr_v)$adj.r.squared, "\n\n")
 
-plot_train_pred(y_train = y_train_m,
-                y_pred = predict(fit_LR_year),
-                model_name = "Linear Regression w/ Monthly Seasonality")
+cat("Full model:\n")
+cat("  AIC:", AIC(lr_v_full), "\n")
+cat("  Adjusted R²:", summary(lr_v_full)$adj.r.squared, "\n")
+```
+The model with only the monthly seasonality performs better than the full model in terms of both AIC and adjusted R².
 
-##
-fit_LR_year_month <- lm(y_train_m ~ tt + trainm$Year + trainm$Month)
-summary(fit_LR_year_month)
-
-plot_train_pred(y_train = y_train_m,
-                y_pred = predict(fit_LR_year_month),
-                model_name = "Linear Regression w/ Monthly Seasonality")
-
-res_LR_year_month <- residuals(fit_LR_year_month)
-plot(res_LR_year_month, ylab="residuals")
-dwtest(fit_LR_year_month)
-
-#####
-
-AIC(fit_LR_month)
-AIC(fit_LR_year)
-AIC(fit_LR_year_month) # lower AIC-->best model
-# TODO: GUARDARE CON TEST DI SIGNIFICATIVITÁ SE POSSIAMO RIMUOVERE UNA VARIABILE 
-#       E.G.: TOLGO trainm$Year
-
-################################################################################
-# ** BASS MODEL **
-################################################################################
-
-y_train_tsm = ts(y_train_m, start = c(2021, 01), frequency = 12)
-end(y_train_tsm)
-
-fit_BM <- BM(y_train_tsm, display = TRUE)
-summary(fit_BM)
-
-AIC_BM <- compute_AIC(n = length(fit_BM$data),
-                      RSS = fit_BM$RSS,
-                      k = length(fit_BM$coefficients))
-AIC_BM
-# TODO: NON SO UN TUBO DEL BASS MODEL E MI É DIFFICILE ITERPRETARE I RISULTATI, 
-#       IN LINEA DI MASSIMA MI PARE FACCIA CAGARE
-
-################################################################################
-# ** GAM MODEL **
-################################################################################
-
-trainm$Month <- as.numeric(trainm$Month)
-gam_model <- gam(Baccala_Mantecato ~ s(Month), data = trainm)
-
-summary(gam_model)
-# leggendo documentazione, sembra figo -> https://www.rdocumentation.org/packages/mgcv/versions/1.9-1/topics/gam
-plot(gam_model, pages=1, seWithMean=TRUE) 
-gam.check(gam_model)
-#
-
-gam_forecast <- predict(gam_model, newdata = trainm)
-AIC(gam_model)
+## ARIMA Model
 
 
-plot_train_pred(y_train = trainm$Baccala_Mantecato,
-                y_pred = gam_forecast,
-                model_name = "GAM Model")
+To begin, we first transform the sales data of Baccalá Mantecato into a time series object:
 
-res_GAM <- residuals(gam_model)
-plot(res_GAM, ylab="residuals")
-dwtest(gam_model)
+```{r}
+library(forecast)
+ts_m <- ts(train$Baccala_Mantecato, start = c(2021, 01), frequency = 12)
+plot.ts(ts_m)
+```
+From the plot above and the significance of the trend coefficient in the regression model discussed in the previous section, we might consider taking the first difference to observe the behavior of the ACF and PACF.
+
+```{r}
+ts_m1 <- diff(ts_m,1)
+Acf(ts_m1)
+Pacf(ts_m1)
+```
+
+
+Both the ACF and PACF plots show a sinusoidal pattern, with all values falling within the confidence bands, except for a significant spike at lag 12. This suggests that a SARIMA model with a seasonal period s=12, accounting for monthly data with yearly seasonality, might be appropriate for this time series.
+
+
+```{r}
+ts_m_12 <- diff(ts_m, lag = 12)
+Acf(ts_m_12)
+Pacf(ts_m_12)
+```
+
+Now, we will build two SARIMA models. The first model will incorporate a non-seasonal differencing (with d=1), one autoregressive term (AR(1)), and a seasonal differencing with a period of 12 (to account for the yearly seasonality). The second model will instead include a moving average (MA(1)) term along with the differencing.
+
+```{r}
+# SARIMA (1,1,0)(0,1,0)[12]
+sarima_model1 <- Arima(ts_m, order=c(1,1,0), seasonal=c(0,1,0))
+summary(sarima_model1)
+
+# SARIMA (0,1,1)(0,1,0)[12]
+sarima_model2 <- Arima(ts_m, order=c(0,1,1), seasonal=c(0,1,0))
+summary(sarima_model2)
+```
+Based on the AIC values, the SARIMA (0,1,1)(0,1,0)[12] model is the better model. It has a lower AIC value of 164.89, compared to the SARIMA (1,1,0)(0,1,0)[12] model,
+
+```{r}
+resid2 <- residuals(sarima_model2)
+Acf(resid2)
+Pacf(resid2)
+```
+
+
+```{r}
+ts_v <- ts(data$Baccala_Vicentina, start = c(2021, 01), frequency = 12)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
