@@ -1,3 +1,38 @@
+TODO: UNDERSTAND ALL THE MODEL ADDED AND COMMENT IT 
+
+  FATTI
+  
+    MULTIPLE LINEAR REGRESSION-->TOTO
+    
+    GAM-->FLAVIO
+    EXPONENTIAL SMOOTHING-->ALBI
+    
+  DA FARE
+  
+    ARIMAX-->FLAVIO | SARIMA-->TOTO
+    
+    GENERALIZED BASS MODEL-->FLAVIO
+    KNN-->ALBI
+    
+    BASS MODEL-->FLAVIO
+    LOCAL REGRESSION-->ALBI
+    PROPHET MODEL-->TOTO
+    SPLINES-->TOTO
+    
+
+TOTO 09/01/2025
+    COMMENTO:
+         - TEST NORMALITÁ CON library(olsrr) (funzione='ols_test_normality') la usa la prof? ha senso? cosa fa?
+           stesso discorso vale per ols_test_correlation  e ols_test_breusch_pagan
+         
+       
+    ALBI 09/01/2025
+     START COMMENT
+       La prof non lo usa ma ne avevo già parlato con lei e ha detto che possiamo usare 
+       tutti i pacchetti che vogliamo basta che sappiamo cosa fanno e che non ci sono problemi
+       ovviamente dobbiamo sapere cosa fanno e commentare di conseguenza i risultati
+
+
 
 Upload only the sections of code that you are confident work correctly and are ready for submission in the exam. Include comments where possible for better clarity and understanding.
 
