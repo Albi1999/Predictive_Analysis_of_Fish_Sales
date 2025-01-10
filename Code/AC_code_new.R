@@ -56,6 +56,13 @@ help("olsrr")
 #     END COMMENT
 
 
+#     ALBI 10/01/2025
+#     Ho lavorato sui modelli Exponential smoothing
+#     Ho provato a fare un tuning del modello ma non ho ottenuto risultati migliori
+#     Ho provato a fare un modello con la regressione multipla e ho ottenuto un buon risultato
+
+
+
 # Clear workspace
 rm(list = ls())
 
@@ -319,17 +326,8 @@ plot_actual_vs_forecast(
 ## 4.3 Exponential Smoothing ----
 fit_ES <- ets(train_series)
 summary(fit_ES)
-# The selected model is ETS(A,N,A):
-# A: Additive error, additive trend.
-# N: No seasonality included.
-# A: Additive level component.
-
-# Smoothing Parameters:
-# Alpha (α) = 0.578: Moderate weighting of recent observations for level updates.
-# Gamma (γ) ≈ 0.0001: Negligible trend smoothing, suggesting very minimal trend updates.
-
+AIC(fit_ES)
 # Metrics and Diagnostics:
-
 #   AIC, AICc, BIC:
 #     AIC = 304.7, AICc = 322.5, BIC = 331.1. 
 #     While the AIC is acceptable, higher BIC suggests the model may be overfitting due to complexity.
@@ -354,6 +352,33 @@ plot_actual_vs_forecast(
 # There’s a clear divergence between actual values (blue line) and forecasted values (red dashed line). 
 # The forecast fails to capture the magnitude of fluctuations in the data, particularly the peak at time point 2 and the drop at time point 3.
 # This highlights the model’s inability to account for potential seasonality or non-linear trends.
+
+
+### Exponential Smoothing Improvements with Fine-Tuning ----
+
+# Include Additive and Multiplicative Seasonality using Holt-Winters
+fit_hw_mult <- hw(train_series, seasonal = "multiplicative")
+forecast_hw_mult <- forecast(fit_hw_mult, h = length(train_testm$y_test))
+summary(fit_hw_mult)
+# BAD AIC
+
+# Fine-tune Holt-Winters Multiplicative Model
+fit_hw_mult_tuned <- ets(train_series, model = "MAM")
+forecast_hw_mult_tuned <- forecast(fit_hw_mult_tuned, h = length(train_testm$y_test))
+summary(fit_hw_mult_tuned)
+AIC(fit_hw_mult_tuned)
+# STILL BAD AIC
+
+# Combine Results with Fish Consumption using Regression + ETS
+fit_reg <- lm(y_train_m ~ trainm$Month + trainm$Year + trainm$fish_cons)
+residuals_reg <- residuals(fit_reg)
+fit_res_ets <- ets(residuals_reg)
+summary(fit_reg) # Good R-squared
+AIC(fit_reg) # BEST AIC
+summary(fit_res_ets)
+AIC(fit_res_ets) # Worst AIC compared to the multiple linear regression :(
+
+
 
 ## 4.4 GAM (Generalized Additive Model) ----
 gam_model <- gam(Baccala_Mantecato ~ s(as.numeric(Month)), data = trainm)
