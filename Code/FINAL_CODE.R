@@ -144,11 +144,12 @@ n_sample <- floor(nrow(data) * prop)
   
 train <- data[1:n_sample, ]
 y_trainm <- train[["Baccala_Mantecato"]]
+y_trainv <- train[["Baccala_Vicentina"]]
   
 test <- data[(n_sample + 1):nrow(data), ]
   
 y_testm <- test[["Baccala_Mantecato"]]
-y_testv <- test[["Baccala_Mantecato"]]
+y_testv <- test[["Baccala_Vicentina"]]
 ```
 
 ```{r TRAIN-TEST PLOT}
@@ -226,7 +227,7 @@ This time the fish consumption seems to be not useful to imporve the model pefro
 lr_v <- update(lr_v_full, .~. - fish_cons)
 summary(lr_v)
 ```
-The adjusted R² increses from 0.8261 to 0.8305 suggesting that the redced model is better than the full one. 
+The adjusted R² increses from 0.8261 to 0.8305 suggesting that the reduced model is better than the full one. 
 Furthermore, the trend variable shows a large p-value, suggesting that it can be removed from the model without significantly affecting the results.
 
 ```{r}
@@ -249,12 +250,8 @@ cat("  Adjusted R²:", summary(lr_v_full)$adj.r.squared, "\n")
 ```
 The model with only the monthly seasonality performs better than the full model in terms of both AIC and adjusted R².
 
-
 ## ARIMA Model
 
-```{r}
-
-```
 
 
 
