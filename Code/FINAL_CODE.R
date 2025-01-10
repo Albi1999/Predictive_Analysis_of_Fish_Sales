@@ -250,8 +250,22 @@ cat("  Adjusted R²:", summary(lr_v_full)$adj.r.squared, "\n")
 ```
 The model with only the monthly seasonality performs better than the full model in terms of both AIC and adjusted R².
 
-## ARIMA Model
+Finally we will analyze the residuals because...
 
+```{r}
+resid_lr <- residuals(lr_v)
+plot(resid_lr)
+```
+```{r}
+dwtest(lr_v)
+```
+
+When we analyze the residuals of the linear regression model, as shown in the plot below, we observe no particular patterns. The residuals appear to be randomly scattered, indicating that the model has appropriately captured the underlying trends in the data. This suggests that the assumptions of linearity, constant variance, and independence are reasonably satisfied, and the model's fit is adequate for forecasting purposes.
+On the other hand the Durbin-Watson test is used to check for autocorrelation in the residuals of a regression model.
+Since the p-value is greater than the commonly used significance level (0.05), we fail to reject the null hypothesis.
+
+
+## ARIMA Model
 
 
 
