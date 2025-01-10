@@ -1,6 +1,3 @@
-Upload only the sections of code that you are confident work correctly and are ready for submission in the exam. Include comments where possible for better clarity and understanding.
-
-
 # Analysis of Baccala Mantecato and Baccala alla Vicentina
 
 ## Package Loading and General Configuration
@@ -9,9 +6,12 @@ Upload only the sections of code that you are confident work correctly and are r
 rm(list=ls())
 library(readxl)
 library(readr)
+library(tidyverse)
 library(dplyr)
 library(ggplot2)
 library(gridExtra)
+library(lmtest)
+library(forecast)
 ```
 
 ```{r SETWD, warning=FALSE}
@@ -176,6 +176,7 @@ ggplot(data, aes(x = trend, y = Baccala_Vicentina, color = Type)) +
 
 ### Linear Regression Model
 
+#### Baccala Mantecato
 We start by estimating a simple linear regression model with all the possible variables
 ```{r}
 lr_m <- lm(Baccala_Mantecato ~ trend + Month + fish_cons, data = train)
@@ -213,6 +214,38 @@ cat("  Adjusted R²:", summary(lr_m)$adj.r.squared, "\n")
 ```
 From the results above we clearly see that the best model fit belong to the full model with all predictors: trend, monthly seasonality and fish consumption.
 
+Finally we will analyze the residuals.
+```{r}
+resid_lr <- residuals(lr_m)
+plot(resid_lr)
+```
+
+```{r}
+dwtest(lr_m)
+```
+
+When we analyze the residuals of the linear regression model, as shown in the plot below, we observe no particular patterns. The residuals appear to be randomly scattered, indicating that the model has appropriately captured the underlying trends in the data. This suggests that the assumptions of linearity, constant variance, and independence are reasonably satisfied, and the model's fit is adequate for forecasting purposes. 
+We also perform the Durbin-Watson test, that is used to check for autocorrelation in the residuals of a regression model.
+Since the p-value is smaller than the significance level (0.05), we don't reject the null hypothesis that the autocorrelation of the disturbances is 0.
+
+Finally we plot the predicted values and the actual ones
+
+```{r}
+ggplot() +
+  geom_line(aes(x = train$Date, y = train$Baccala_Mantecato, color = "Actual Values"), size = 1) +
+  geom_line(aes(x = train$Date, y = fitted(lr_m), color = "Predicted Values"), size = 1) +
+  labs(
+    title = "Time Series: Actual vs Predicted Values",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", text = element_text(size = 12))
+
+```
+#### Baccala Vicentina
+
 The same analysis is conducted below for the Baccala Vicentina variable.
 
 ```{r}
@@ -238,6 +271,7 @@ The best model for the Baccala Vicentina series is the one that includes only th
 Moreover, the fitted model is statistically significant, as shown by the F-statistic of 18.21, with a p-value of 1.684e-09, confirming the model's overall significance.
 
 Below, we compare the difference in AIC and adjusted R² between the full model and the one with only the monthly seasonality.
+
 ```{r}
 cat("Model with month:\n")
 cat("  AIC:", AIC(lr_v), "\n")
@@ -249,13 +283,42 @@ cat("  Adjusted R²:", summary(lr_v_full)$adj.r.squared, "\n")
 ```
 The model with only the monthly seasonality performs better than the full model in terms of both AIC and adjusted R².
 
-## ARIMA Model
+Finally we will analyze the residuals.
+```{r}
+resid_lr <- residuals(lr_v)
+plot(resid_lr)
+```
+```{r}
+dwtest(lr_v)
+```
 
+When we analyze the residuals of the linear regression model, as shown in the plot below, we observe no particular patterns. The residuals appear to be randomly scattered, indicating that the model has appropriately captured the underlying trends in the data. This suggests that the assumptions of linearity, constant variance, and independence are reasonably satisfied, and the model's fit is adequate for forecasting purposes.
+On the other hand we perform the Durbin-Watson test, that is used to check for autocorrelation in the residuals of a regression model.
+Since the p-value is greater than the significance level (0.05), we reject the null hypothesis.
+
+Finally we plot the predicted values and the actual ones
+
+```{r}
+ggplot() +
+  geom_line(aes(x = train$Date, y = train$Baccala_Vicentina, color = "Actual Values"), size = 1) +
+  geom_line(aes(x = train$Date, y = fitted(lr_v), color = "Predicted Values"), size = 1) +
+  labs(
+    title = "Time Series: Actual vs Predicted Values",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", text = element_text(size = 12))
+
+```
+
+
+## ARIMA Model
 
 To begin, we first transform the sales data of Baccalá Mantecato into a time series object:
 
-```{r}
-library(forecast)
+```{r message=FALSE, warning=FALSE}
 ts_m <- ts(train$Baccala_Mantecato, start = c(2021, 01), frequency = 12)
 plot.ts(ts_m)
 ```
