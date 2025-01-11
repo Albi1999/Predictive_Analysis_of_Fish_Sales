@@ -294,37 +294,6 @@ AIC(fit_LR_year_month) # lower AIC-->best model
 # TODO: GUARDARE CON TEST DI SIGNIFICATIVITÁ SE POSSIAMO RIMUOVERE UNA VARIABILE 
 #       E.G.: TOLGO trainm$Year
 
-## 4.2 ARIMA ----
-train_series <- ts(train_testm$y_train, frequency = 12)
-fit_ARIMA <- auto.arima(train_series)
-summary(fit_ARIMA)
-# The chosen model by auto.arima is ARIMA(0,1,0)(1,1,0)[12], which means:
-#     Non-seasonal ARIMA terms: None for AR and MA (p=0, q=0) with first-order differencing (d=1).
-#     Seasonal ARIMA terms: One seasonal autoregressive term (P=1), seasonal differencing (D=1), and no seasonal moving average (Q=0) with a periodicity of 12 (likely monthly data).
-
-# The coefficient for the seasonal AR term is significant at -0.5504, indicating some level of negative autocorrelation between observations across seasonal cycles.
-
-# Model diagnostics:
-#   AIC = 196.27 and BIC = 199.07, both relatively low for a seasonal model.
-#   Residual ACF (last column of error measures) shows minimal correlation (-0.168), suggesting reasonably white noise residuals.
-
-# Training Set Error Metrics:
-#   Mean Absolute Error (MAE) = 3.12, Mean Percentage Error (MPE) = 1.22%, and Mean Absolute Percentage Error (MAPE) = 11.42%.
-#   RMSE (Root Mean Square Error) = 4.63, showing decent predictive power for this model on training data.
-
-
-forecast_ARIMA <- forecast(fit_ARIMA, h = length(train_testm$y_test))
-plot(forecast_ARIMA)
-# The actual data seems to deviate significantly from the forecast's confidence bands in some regions, particularly suggesting either: 
-#     Misspecified seasonal patterns.
-#     Non-stationarity or non-linear trends not captured by the model.
-plot_actual_vs_forecast(
-  actual = train_testm$y_test,
-  forecast = as.numeric(forecast_ARIMA$mean),
-  model_name = "ARIMA"
-)
-# There is a clear discrepancy in the scale or trend alignment of the forecasts, particularly with over-forecasting for later periods.
-
 ## 4.3 Exponential Smoothing ----
 
 ### ETS Baccala Mantecato ----
@@ -412,53 +381,6 @@ results <- rbind(results, data.frame(Model = "Regression + ETS", MSE = mse_reg_e
 
 # Print the results
 print(results)
-
-
-## 4.4 GAM (Generalized Additive Model) ----
-gam_model <- gam(Baccala_Mantecato ~ s(as.numeric(Month)), data = trainm)
-summary(gam_model)
-# Model Components:
-#   Effective degrees of freedom (EDF) = 6.6, suggesting a moderately complex non-linear relationship.
-# Model Fit:
-#   Adjusted R-squared = 0.455, indicating that about 45.5% of the variance in Baccala_Mantecato is explained by the model.
-#   Deviance explained = 54%, aligning with the R-squared value.
-
-plot(gam_model, se = TRUE, col = "blue", main = "GAM Model", ylab = "Baccala Mantecato", xlab = "Month")
-# The smooth term for Month shows a clear non-linear pattern, capturing seasonal variations.
-# Confidence intervals widen in some areas, particularly near the end of the year, suggesting less data support for predictions in these months.
-
-gam.check(gam_model)
-# leggendo documentazione, sembra figo -> https://www.rdocumentation.org/packages/mgcv/versions/1.9-1/topics/gam
-# The gam.check results indicate no issues with the smoothness parameter (k-index = 1.08, p-value = 0.65), confirming that the basis dimension is sufficient.
-
-# Q-Q Plot: Deviance residuals align closely with the diagonal line, indicating that residuals are approximately normal.
-# Residual vs Linear Predictor: The residuals show some structure and variance changes, but no severe departures from homoscedasticity.
-# Histogram of Residuals: Residuals appear approximately symmetric, supporting normality assumptions.
-
-gam_forecast <- predict(gam_model, newdata = trainm)
-AIC(gam_model)
-# AIC = 293.6, which can be compared with other models to assess relative fit.
-plot_train_pred(y_train = trainm$Baccala_Mantecato,
-                y_pred = gam_forecast,
-                model_name = "GAM Model")
-# Predictions closely track the observed values in the training data, showing the model effectively captures non-linear relationships.
-
-res_GAM <- residuals(gam_model)
-plot(res_GAM, ylab="residuals", main = "GAM Model Residuals", col = "blue")
-abline(h = 0, col = "red")
-# Residuals vs Index: Residuals are centered around zero, with no strong patterns indicating unmodeled trends.
-
-dwtest(gam_model)
-# Durbin-Watson Test:
-# DW = 1.58 (p-value = 0.067), suggesting mild positive autocorrelation in residuals, though not statistically significant.
-
-plot_actual_vs_forecast(
-  actual = train_testm$y_test,
-  forecast = predict(gam_model, newdata = train_testm$test),
-  model_name = "GAM"
-)
-# The GAM forecast deviates from the actual test data, especially for the peaks and valleys, indicating limited extrapolation capability beyond the training range.
-
 
 ## 4.5 KNN ----
 
@@ -675,111 +597,114 @@ plot(actual, predictions, main = "Actual vs Predicted (KNN for Baccalà Vicentin
      xlab = "Actual", ylab = "Predicted", pch = 19, col = "blue")
 abline(0, 1, col = "red", lwd = 2)
 
+## Local Regression ----
 
+### Local Regression Baccala Mantecato ----
 
-# 5. Multivariate Models ----
+# Ensure data_copy exists as a copy of your dataset
+data_copy <- data
 
-## 5.1 Multiple Linear Regression ----
-fit_MLR <- lm(Baccala_Mantecato ~ Month + Year, data = train_testm$train)
-summary(fit_MLR)
-# Key Metrics:
-#   Residual Standard Error: 4.539, indicating the average deviation of the predictions from the observed values
-#   Multiple R-squared = 0.8298 and Adjusted R-squared = 0.7448:
-#     About 83% of the variance in Baccala_Mantecato is explained by the model.
-#     Adjusted R-squared reflects a slight penalty for the number of predictors, but it still suggests a strong fit.
-# Significant Predictors:
-#   Statistically significant coefficients:
-#     Monthly effects: Months like August (p=0.002), October (p<0.001), and December (p<0.001) strongly influence the response.
-#    Year effects: All year dummy variables (p<0.01) are significant, indicating a downward trend in Baccala_Mantecato across years.
-#   Insignificant predictors: Some months (e.g., February, May, November) have high p-values (>0.1), suggesting their effects are not statistically meaningful.
+# Add a time index to the copied dataset
+data_copy$tt <- seq_len(nrow(data_copy))
 
-dwtest(fit_MLR)
-# DW = 1.0942, p-value = 0.00076: 
-# Indicates significant positive autocorrelation in the residuals, suggesting temporal dependencies not captured by the model.
+# Perform a chronological train-test split (90% train, 10% test)
+split_index <- floor(0.9 * nrow(data_copy))  # 90% split
+trainm <- data_copy[1:split_index, ]
+testm <- data_copy[(split_index + 1):nrow(data_copy), ]
 
-plot_train_pred(y_train = train_testm$y_train,
-                y_pred = predict(fit_MLR),
-                model_name = "Multiple Linear Regression")
-# Predictions align well with the observed values, indicating the model fits the training data reasonably well.
-# Peaks and troughs are captured, although minor discrepancies occur in highly fluctuating regions.
+# Fit Loess Model on the training data only
+best_span <- 0.3  # Adjust span based on prior tuning
+fit_loess <- loess(Baccala_Mantecato ~ tt, data = trainm, span = best_span)
 
-plot_actual_vs_forecast(
-  actual = train_testm$y_test,
-  forecast = predict(fit_MLR, newdata = train_testm$test),
-  model_name = "Multiple Linear Regression"
-)
-# Forecasted values diverge significantly from actual test data for high peaks and deep troughs.
-# The model seems to underestimate sharp upward trends and overestimate downward trends, indicating limitations in capturing dynamics outside the training range.
+# Generate Loess predictions for the training set
+trainm$loess_fitted <- predict(fit_loess)
 
-## 5.2 ARIMAX ----
-fit_ARIMAX <- auto.arima(train_testm$y_train, xreg = as.numeric(train_testm$train$Month))
-summary(fit_ARIMAX)
-forecast_ARIMAX <- forecast(fit_ARIMAX, xreg = as.numeric(train_testm$test$Month))
-plot(forecast_ARIMAX)
-# The ARIMAX model predicts a linear increase in the values with wide confidence intervals. 
-# This is indicative of its inability to capture the seasonality or cyclic patterns present in the data.
+# Generate Loess predictions for the test set
+testm$loess_forecast <- predict(fit_loess, newdata = data.frame(tt = testm$tt))
 
-plot_actual_vs_forecast(
-  actual = train_testm$y_test,
-  forecast = as.numeric(forecast_ARIMAX$mean),
-  model_name = "ARIMAX"
-)
-# The forecasted values are consistently below the actual test values, leading to a clear underestimation.
+# Handle NA predictions for points outside the training range using a linear model
+na_indices <- is.na(testm$loess_forecast)
+if (any(na_indices)) {
+  linear_model <- lm(Baccala_Mantecato ~ tt, data = trainm)
+  testm$loess_forecast[na_indices] <- predict(linear_model, newdata = data.frame(tt = testm$tt[na_indices]))
+}
 
-## 5.3 Gradient Boosting ----
-train_numeric <- train_testm$train %>%
-  mutate(Month = as.factor(Month)) %>%
-  select(-Date)  # Exclude the Date column
-
-boost_model <- gbm(Baccala_Mantecato ~ ., data = train_numeric,
-                   distribution = "gaussian",
-                   n.trees = 500,
-                   interaction.depth = 3)
-summary(boost_model)
-
-yhat_boost <- predict(boost_model, newdata = train_testm$test, n.trees = 500)
-plot(yhat_boost, type = "l", col = "blue")
-
-plot_actual_vs_forecast(
-  actual = train_testm$y_test,
-  forecast = yhat_boost,
-  model_name = "Gradient Boosting"
+# Combine train and test data into a single dataset for plotting
+plot_data <- bind_rows(
+  trainm %>% mutate(data_type = "Train Observed"),
+  testm %>% mutate(data_type = "Test Observed")
 )
 
-# 6. Nonlinear Models ----
+# Plot Results
+ggplot() +
+  geom_line(data = plot_data %>% filter(data_type == "Train Observed"),
+            aes(x = Date, y = Baccala_Mantecato, color = "Train Observed")) +
+  geom_line(data = plot_data %>% filter(data_type == "Test Observed"),
+            aes(x = Date, y = Baccala_Mantecato, color = "Test Observed")) +
+  geom_line(data = trainm, aes(x = Date, y = loess_fitted, color = "Loess Fitted")) +
+  scale_color_manual(values = c("Train Observed" = "#6BC3FF", 
+                                "Test Observed" = "#FF7F7F", 
+                                "Loess Fitted" = "#8FBC8F")) +
+  labs(title = "Loess Fit for Baccala Mantecato",
+       x = "Date", y = "Baccala Mantecato") +
+  theme_minimal()
 
-## 6.1 Bass Model ----
-y_train_tsm = ts(train_testm$y_train, start = c(2021, 01), frequency = 12)
-fit_BM <- BM(y_train_tsm, display = TRUE)
-summary(fit_BM)
+# Calculate MSE for Loess Fit on Test Data
+valid_forecast <- !is.na(testm$Baccala_Mantecato)
+loess_mse <- mean((testm$Baccala_Mantecato[valid_forecast] - testm$loess_forecast[valid_forecast])^2)
+cat(sprintf("Loess MSE on Test Data (Baccala Mantecato): %.5f\n", loess_mse))
 
-forecast_Bass <- predict(fit_BM, newx = 1:(length(train_testm$y_train) + length(train_testm$y_test)))
+### Local Regression Baccala Vicentina ----
 
-plot_actual_vs_forecast(
-  actual = train_testm$y_test,
-  forecast = forecast_Bass[1:length(train_testm$y_test)],  # Match test length
-  model_name = "Bass Model"
+# Ensure data_copy exists as a copy of your dataset
+data_copy <- data
+
+# Add a time index to the copied dataset
+data_copy$tt <- seq_len(nrow(data_copy))
+
+# Perform a chronological train-test split (90% train, 10% test)
+split_index <- floor(0.9 * nrow(data_copy))  # 90% split
+trainv <- data_copy[1:split_index, ]
+testv <- data_copy[(split_index + 1):nrow(data_copy), ]
+
+# Fit Loess Model on the training data only
+best_span <- 0.3  # Adjust span based on prior tuning
+fit_loess <- loess(Baccala_Vicentina ~ tt, data = trainv, span = best_span)
+
+# Generate Loess predictions for the training set
+trainv$loess_fitted <- predict(fit_loess)
+
+# Generate Loess predictions for the test set
+testv$loess_forecast <- predict(fit_loess, newdata = data.frame(tt = testv$tt))
+
+# Handle NA predictions for points outside the training range using a linear model
+na_indices <- is.na(testv$loess_forecast)
+if (any(na_indices)) {
+  linear_model <- lm(Baccala_Vicentina ~ tt, data = trainv)
+  testv$loess_forecast[na_indices] <- predict(linear_model, newdata = data.frame(tt = testv$tt[na_indices]))
+}
+
+# Combine train and test data into a single dataset for plotting
+plot_data <- bind_rows(
+  trainv %>% mutate(data_type = "Train Observed"),
+  testv %>% mutate(data_type = "Test Observed")
 )
 
-## 6.2 Generalized Bass Model ----
-GGM_model <- GGM(train_testm$y_train, prelimestimates = c(10, 0.01, 0.1, 0.01, 0.1))
-summary(GGM_model)
-forecast_GGM <- predict(GGM_model, newx = 1:(length(train_testm$y_train) + length(train_testm$y_test)))
+# Plot Results
+ggplot() +
+  geom_line(data = plot_data %>% filter(data_type == "Train Observed"),
+            aes(x = Date, y = Baccala_Vicentina, color = "Train Observed")) +
+  geom_line(data = plot_data %>% filter(data_type == "Test Observed"),
+            aes(x = Date, y = Baccala_Vicentina, color = "Test Observed")) +
+  geom_line(data = trainv, aes(x = Date, y = loess_fitted, color = "Loess Fitted")) +
+  scale_color_manual(values = c("Train Observed" = "#6BC3FF", 
+                                "Test Observed" = "#FF7F7F", 
+                                "Loess Fitted" = "#8FBC8F")) +
+  labs(title = "Loess Fit for Baccala Vicentina",
+       x = "Date", y = "Baccala Vicentina") +
+  theme_minimal()
 
-plot_actual_vs_forecast(
-  actual = train_testm$y_test,
-  forecast = forecast_GGM[1:length(train_testm$y_test)],  # Match test length
-  model_name = "Generalized Bass Model"
-)
-
-# 7. Model Comparison ----
-actual <- train_testm$y_test
-results <- data.frame(
-  ARIMA = compute_metrics(actual, as.numeric(forecast_ARIMA$mean)),
-  ES = compute_metrics(actual, as.numeric(forecast_ES$mean)),
-  GAM = compute_metrics(actual, predict(gam_model, newdata = train_testm$test)),
-  Boosting = compute_metrics(actual, yhat_boost),
-  Bass = compute_metrics(actual, forecast_Bass)
-)
-print(t(results))
-
+# Calculate MSE for Loess Fit on Test Data
+valid_forecast <- !is.na(testv$Baccala_Vicentina)
+loess_mse <- mean((testv$Baccala_Vicentina[valid_forecast] - testv$loess_forecast[valid_forecast])^2)
+cat(sprintf("Loess MSE on Test Data (Baccala Vicentina): %.5f\n", loess_mse))
