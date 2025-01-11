@@ -1062,7 +1062,7 @@ abline(0, 1, col = "red", lwd = 2)
 - The selected `k = 5` strikes a good balance between training and validation performance, achieving a validation MSE of 0.02942 and a test MSE of 0.05786.
 
 2. **Actual vs Predicted Plot:**
-  - The plot for `k = 5` demonstrates points scattered close to the diagonal. The alignment isn't as tight as for the mantecato model, indicating slightly less accurate predictions, particularly for extreme values.
+  - The plot for `k = 5` demonstrates points scattered close to the diagonal. The alignment isn''t as tight as for the mantecato model, indicating slightly less accurate predictions, particularly for extreme values.
 
 3. **Overall:**
    - `k = 5` provides a good tradeoff between model complexity and accuracy. The Test MAE of 0.20753 is reasonable, given the noisier nature of the Vicentina data.
@@ -1077,5 +1077,138 @@ For both models:
 
 The chosen `k` values minimize overfitting while maintaining acceptable predictive accuracy for practical use.
 
+
+
+## Local Regression ----
+
+### Local Regression Baccala Mantecato ----
+```{r}
+# Ensure data_copy exists as a copy of your dataset
+data_copy <- data
+
+# Add a time index to the copied dataset
+data_copy$tt <- seq_len(nrow(data_copy))
+
+# Perform a chronological train-test split (90% train, 10% test)
+split_index <- floor(0.9 * nrow(data_copy))  # 90% split
+trainm <- data_copy[1:split_index, ]
+testm <- data_copy[(split_index + 1):nrow(data_copy), ]
+
+# Fit Loess Model on the training data only
+best_span <- 0.3  # Adjust span based on prior tuning
+fit_loess <- loess(Baccala_Mantecato ~ tt, data = trainm, span = best_span)
+
+# Generate Loess predictions for the training set
+trainm$loess_fitted <- predict(fit_loess)
+
+# Generate Loess predictions for the test set
+testm$loess_forecast <- predict(fit_loess, newdata = data.frame(tt = testm$tt))
+
+# Handle NA predictions for points outside the training range using a linear model
+na_indices <- is.na(testm$loess_forecast)
+if (any(na_indices)) {
+  linear_model <- lm(Baccala_Mantecato ~ tt, data = trainm)
+  testm$loess_forecast[na_indices] <- predict(linear_model, newdata = data.frame(tt = testm$tt[na_indices]))
+}
+
+# Combine train and test data into a single dataset for plotting
+plot_data <- bind_rows(
+  trainm %>% mutate(data_type = "Train Observed"),
+  testm %>% mutate(data_type = "Test Observed")
+)
+
+# Plot Results
+ggplot() +
+  geom_line(data = plot_data %>% filter(data_type == "Train Observed"),
+            aes(x = Date, y = Baccala_Mantecato, color = "Train Observed")) +
+  geom_line(data = plot_data %>% filter(data_type == "Test Observed"),
+            aes(x = Date, y = Baccala_Mantecato, color = "Test Observed")) +
+  geom_line(data = trainm, aes(x = Date, y = loess_fitted, color = "Loess Fitted")) +
+  scale_color_manual(values = c("Train Observed" = "#6BC3FF", 
+                                "Test Observed" = "#FF7F7F", 
+                                "Loess Fitted" = "#8FBC8F")) +
+  labs(title = "Loess Fit for Baccala Mantecato",
+       x = "Date", y = "Baccala Mantecato") +
+  theme_minimal()
+
+# Calculate MSE for Loess Fit on Test Data
+valid_forecast <- !is.na(testm$Baccala_Mantecato)
+loess_mse <- mean((testm$Baccala_Mantecato[valid_forecast] - testm$loess_forecast[valid_forecast])^2)
+cat(sprintf("Loess MSE on Test Data (Baccala Mantecato): %.5f\n", loess_mse))
+
+### Local Regression Baccala Vicentina ----
+
+# Ensure data_copy exists as a copy of your dataset
+data_copy <- data
+
+# Add a time index to the copied dataset
+data_copy$tt <- seq_len(nrow(data_copy))
+
+# Perform a chronological train-test split (90% train, 10% test)
+split_index <- floor(0.9 * nrow(data_copy))  # 90% split
+trainv <- data_copy[1:split_index, ]
+testv <- data_copy[(split_index + 1):nrow(data_copy), ]
+
+# Fit Loess Model on the training data only
+best_span <- 0.3  # Adjust span based on prior tuning
+fit_loess <- loess(Baccala_Vicentina ~ tt, data = trainv, span = best_span)
+
+# Generate Loess predictions for the training set
+trainv$loess_fitted <- predict(fit_loess)
+
+# Generate Loess predictions for the test set
+testv$loess_forecast <- predict(fit_loess, newdata = data.frame(tt = testv$tt))
+
+# Handle NA predictions for points outside the training range using a linear model
+na_indices <- is.na(testv$loess_forecast)
+if (any(na_indices)) {
+  linear_model <- lm(Baccala_Vicentina ~ tt, data = trainv)
+  testv$loess_forecast[na_indices] <- predict(linear_model, newdata = data.frame(tt = testv$tt[na_indices]))
+}
+
+# Combine train and test data into a single dataset for plotting
+plot_data <- bind_rows(
+  trainv %>% mutate(data_type = "Train Observed"),
+  testv %>% mutate(data_type = "Test Observed")
+)
+
+# Plot Results
+ggplot() +
+  geom_line(data = plot_data %>% filter(data_type == "Train Observed"),
+            aes(x = Date, y = Baccala_Vicentina, color = "Train Observed")) +
+  geom_line(data = plot_data %>% filter(data_type == "Test Observed"),
+            aes(x = Date, y = Baccala_Vicentina, color = "Test Observed")) +
+  geom_line(data = trainv, aes(x = Date, y = loess_fitted, color = "Loess Fitted")) +
+  scale_color_manual(values = c("Train Observed" = "#6BC3FF", 
+                                "Test Observed" = "#FF7F7F", 
+                                "Loess Fitted" = "#8FBC8F")) +
+  labs(title = "Loess Fit for Baccala Vicentina",
+       x = "Date", y = "Baccala Vicentina") +
+  theme_minimal()
+
+# Calculate MSE for Loess Fit on Test Data
+valid_forecast <- !is.na(testv$Baccala_Vicentina)
+loess_mse <- mean((testv$Baccala_Vicentina[valid_forecast] - testv$loess_forecast[valid_forecast])^2)
+cat(sprintf("Loess MSE on Test Data (Baccala Vicentina): %.5f\n", loess_mse))
+```
+
+### Brief Comment on the Results
+
+1. **Baccala Mantecato**:
+  - The **Loess model** applied to the Baccala Mantecato dataset demonstrates a good fit for the training data, capturing the underlying trend and variability reasonably well.
+- However, the **Mean Squared Error (MSE) on the test set** is relatively high (**358.32314**), indicating that the model''s ability to generalize to unseen data is limited. This may suggest that the data contains significant variability or seasonality that the Loess model with the selected span cannot fully capture.
+
+2. **Baccala Vicentina**:
+   - The **Loess model** for Baccala Vicentina shows a smoother fit for the training data, which aligns with the nature of the series. The observed test data points are relatively close to the forecasted values.
+   - The **MSE on the test set** is much lower (**2.66208**) compared to Baccala Mantecato, indicating that the Loess model is more effective in capturing the trend and variability for this dataset.
+
+### General Observations:
+- The Loess model is highly dependent on the chosen span parameter, which influences the degree of smoothing. Fine-tuning the span (e.g., **0.3** for Baccala Mantecato and **0.3** for Baccala Vicentina) was essential for achieving these results.
+- The use of a fallback **linear model** to handle predictions outside the training range effectively ensures continuity in the predictions but may introduce biases if the linear assumption does not align with the underlying pattern.
+
+### Suggestions:
+- For the final report, highlight the differences in the data's structure (e.g., variability, trends) that influenced the model's performance.
+- Consider discussing the implications of the higher MSE for Baccala Mantecato, potentially suggesting alternative approaches (e.g., including additional covariates or using seasonal decomposition).
+- Showcase the plots to visually support the interpretation of the model fit and the transition between the training and testing phases.
 
 
