@@ -1,11 +1,7 @@
 
-split_train_test <- function(data, name_y, prop) {
-  n_sample <- floor(nrow(data) * prop)
-  train <- data[1:n_sample, ]
-  y_train <- train[[name_y]]
-  test <- data[(n_sample + 1):nrow(data), ]
-  y_test <- test[[name_y]]
-  return(list(train = train, y_train = y_train, test = test, y_test = y_test))
+mse = function(pred, real){
+  mse = mean((real-pred)^2)
+  return(mse)
 }
 
 plot_train_test <- function(train_test, name_y) {
