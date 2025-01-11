@@ -379,7 +379,7 @@ From the plot above and the significance of the trend coefficient in the regress
 ```{r}
 ts_m1 <- diff(ts_m,1)
 Acf(ts_m1, main = "ACF of Baccala Mantecato with Lag 1", col = "#FF7F7F", lwd = 2)
-Pacf(ts_m1, main = "PACF of Baccala Vicentina with Lag 1", col = "#6BC3FF", lwd = 2)
+Pacf(ts_m1, main = "PACF of Baccala Mantecato with Lag 1", col = "#6BC3FF", lwd = 2)
 ```
 
 
@@ -668,8 +668,6 @@ res_proph <- train$Baccala_Vicentina - head(forecast_future$yhat, 38)
 mse_train_prv <- mean(res_proph^2)
 checkresiduals(res_proph)
 ```
-
-
 
 
 ### GAM Model ----
