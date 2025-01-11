@@ -704,8 +704,8 @@ plot_results(results, "MSE_Test_Mantecato")
 
 plot_results(results, "MSE_Train_Vicentina")
 plot_results(results, "MSE_Test_Vicentina")
-
 ```
+
 
 
 
