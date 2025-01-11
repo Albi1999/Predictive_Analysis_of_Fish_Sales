@@ -263,8 +263,13 @@ Finally we plot the predicted values and the actual ones. We also compute the MS
 ```{r}
 ggplot() +
   geom_line(aes(x = data$Date, y = data$Baccala_Mantecato, color = "Actual Values"), size = 1) +
-  geom_line(aes(x = train$Date, y = fitted(lr_m), color = "Train Fitted Values"), size = 1) +
-  geom_line(aes(x = test$Date, y = predict(lr_m, newdata = test), color = "Test predicted Values"), size = 1) + 
+  geom_line(aes(x = train$Date, y = fitted(lr_m), color = "Fitted Values (Train)"), size = 1) +
+  geom_line(aes(x = test$Date, y = predict(lr_m, newdata = test), color = "Predicted Values (Test)"), size = 1) + 
+  scale_color_manual(values = c("Actual Values" = "#FF7F7F", 
+                                "Fitted Values (Train)" = "#6BC3FF", 
+                                "Predicted Values (Test)" = "#8FBC8F"),
+                     labels = c("Actual Values", "Fitted Values (Train)", "Predicted Values (Test)")) +
+  
   labs(
     title = "Time Series: Actual vs Predicted Values",
     x = "Date",
@@ -273,6 +278,7 @@ ggplot() +
   ) +
   theme_minimal() +
   theme(legend.position = "bottom")
+  
 mse_lrm <- mse(predict(lr_m, newdata = test), test$Baccala_Mantecato)
 print(mse_lrm)
 ```
@@ -342,6 +348,10 @@ ggplot() +
   geom_line(aes(x = data$Date, y = data$Baccala_Vicentina, color = "Actual Values"), size = 1) +
   geom_line(aes(x = train$Date, y = fitted(lr_v), color = "Train Fitted Values"), size = 1) +
   geom_line(aes(x = test$Date, y = predict(lr_v, newdata = test), color = "Test predicted Values"), size = 1) + 
+  scale_color_manual(values = c("Actual Values" = "#FF7F7F", 
+                                "Fitted Values (Train)" = "#6BC3FF", 
+                                "Predicted Values (Test)" = "#8FBC8F"),
+                     labels = c("Actual Values", "Fitted Values (Train)", "Predicted Values (Test)")) +
   labs(
     title = "Time Series: Actual vs Predicted Values",
     x = "Date",
@@ -349,7 +359,7 @@ ggplot() +
     color = "Legend"
   ) +
   theme_minimal() +
-  theme(legend.position = "bottom", text = element_text(size = 12))
+  theme(legend.position = "bottom")
 mse_lrv <- mse(predict(lr_v, newdata = test), test$Baccala_Vicentina)
 print(mse_lrv)
 ```
