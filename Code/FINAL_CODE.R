@@ -6,32 +6,15 @@ TODO: UNDERSTAND ALL THE MODEL ADDED AND COMMENT IT
     SARIMA-->TOTO
     
     GAM-->FLAVIO
+    ARIMAX-->FLAVIO
+     
     EXPONENTIAL SMOOTHING-->ALBI
     KNN-->ALBI
     
   DA FARE
-  
-    ARIMAX-->FLAVIO
-    GENERALIZED BASS MODEL-->FLAVIO
-    BASS MODEL-->FLAVIO
     
     LOCAL REGRESSION-->ALBI
-    PROPHET MODEL-->TOTO
     SPLINES-->TOTO
-    
-
-TOTO 09/01/2025
-    COMMENTO:
-         - TEST NORMALITÁ CON library(olsrr) (funzione='ols_test_normality') la usa la prof? ha senso? cosa fa?
-           stesso discorso vale per ols_test_correlation  e ols_test_breusch_pagan
-         
-       
-    ALBI 09/01/2025
-     START COMMENT
-       La prof non lo usa ma ne avevo già parlato con lei e ha detto che possiamo usare 
-       tutti i pacchetti che vogliamo basta che sappiamo cosa fanno e che non ci sono problemi
-       ovviamente dobbiamo sapere cosa fanno e commentare di conseguenza i risultati
-
 
 
 Upload only the sections of code that you are confident work correctly and are ready for submission in the exam. Include comments where possible for better clarity and understanding.
@@ -52,6 +35,8 @@ library(ggplot2)
 library(gridExtra)
 library(lmtest)
 library(mgcv)
+library(forecast)
+library(lmtest)
 
 ```
 
@@ -417,6 +402,7 @@ mse(test$Baccala_Mantecato, forecast(sarima_model2m, h = length(y_testm))$mean)
 mse(test$Baccala_Mantecato, forecast(sarima_model3m, h = length(y_testm))$mean)
 ```
 
+
 Based on the AIC values, the SARIMA(0,1,1)(0,1,0)[12] model is the better model. It has a lower AIC compared to the other SARIMA models. By the way, evaluating the performance on the test set, we notice that the MSE is larger for the AIC best model, while the SARIMA(0,1,0)(0,1,0)[12] perform better on the test set. We decide to continue whit the last one.
 
 ```{r}
@@ -434,6 +420,7 @@ ggplot() +
   theme_minimal() +
   theme(legend.position = "bottom", text = element_text(size = 12))
 ```
+
 
 
 ```{r}
@@ -511,15 +498,15 @@ ggplot() +
 ```
 
 
-## GAM Model ----
+### GAM Model ----
 
 ```{r}
-
 gam_mantecato <- gam(Baccala_Mantecato ~  s(trend) + Month + s(fish_cons), data = train)
 summary(gam_mantecato)
 gam_vicentina <- gam(Baccala_Vicentina ~  Month, data = train)
 summary(gam_vicentina)
 ```
+
 
 ## ARMAX Model ----
 
@@ -539,6 +526,7 @@ ts_m <- ts(train$Baccala_Mantecato, start = c(2021,01), frequency = 12)
 armax2 <- Arima(ts_m, xreg=train$fish_cons, order = c(0,1,1), seasonal = c(0,1,0))
 summary(armax2)
 ```
+
 
 ## Exponential Smoothing Model ----
 
