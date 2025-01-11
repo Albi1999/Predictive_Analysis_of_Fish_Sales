@@ -326,59 +326,93 @@ plot_actual_vs_forecast(
 # There is a clear discrepancy in the scale or trend alignment of the forecasts, particularly with over-forecasting for later periods.
 
 ## 4.3 Exponential Smoothing ----
-fit_ES <- ets(train_series)
-summary(fit_ES)
-AIC(fit_ES)
-# Metrics and Diagnostics:
-#   AIC, AICc, BIC:
-#     AIC = 304.7, AICc = 322.5, BIC = 331.1. 
-#     While the AIC is acceptable, higher BIC suggests the model may be overfitting due to complexity.
-#   Training Set Error:
-#     Mean Error (ME): -0.14, which is very close to zero, showing minimal bias in predictions.
-#     RMSE: 3.72 and MAPE: 10.78%. These values are similar to ARIMA's, 
-#     indicating that ETS performs comparably in training.
-#   Residual ACF (Autocorrelation):
-#     Residual ACF1 = 0.14, indicating a small but present autocorrelation in residuals. 
-#     This hints that the model hasn't fully captured temporal dependencies.
 
-forecast_ES <- forecast(fit_ES, h = length(train_testm$y_test))
-plot(forecast_ES)
-# The confidence intervals widen with future forecasts, as expected in exponential smoothing models.
-# The forecast follows a gradual trend due to the lack of explicit seasonality (model uses additive components only).
-
-plot_actual_vs_forecast(
-  actual = train_testm$y_test,
-  forecast = as.numeric(forecast_ES$mean),
-  model_name = "Exponential Smoothing"
+### ETS Baccala Mantecato ----
+# Initialize a data frame to store the results
+results <- data.frame(
+  Model = character(),
+  MSE = numeric(),
+  AIC = numeric(),
+  stringsAsFactors = FALSE
 )
-# There’s a clear divergence between actual values (blue line) and forecasted values (red dashed line). 
-# The forecast fails to capture the magnitude of fluctuations in the data, particularly the peak at time point 2 and the drop at time point 3.
-# This highlights the model’s inability to account for potential seasonality or non-linear trends.
 
+# 1. ETS Model
+train_series <- ts(train_testm$y_train, start = c(2021, 1), frequency = 12)
+fit_ES <- ets(train_series)
+forecast_ES <- forecast(fit_ES, h = length(train_testm$y_test))
+mse_ets <- mse(forecast_ES$mean, train_testm$y_test)
+aic_ets <- AIC(fit_ES)
+results <- rbind(results, data.frame(Model = "ETS", MSE = mse_ets, AIC = aic_ets))
 
-### Exponential Smoothing Improvements with Fine-Tuning ----
+# 2. Additive Seasonality (Holt-Winters via ETS)
+fit_hw_add <- ets(train_series, model = "AAA")
+forecast_hw_add <- forecast(fit_hw_add, h = length(train_testm$y_test))
+mse_hw_add <- mse(forecast_hw_add$mean, train_testm$y_test)
+aic_hw_add <- AIC(fit_hw_add)
+results <- rbind(results, data.frame(Model = "Holt-Winters Additive", MSE = mse_hw_add, AIC = aic_hw_add))
 
-# Include Additive and Multiplicative Seasonality using Holt-Winters
-fit_hw_mult <- hw(train_series, seasonal = "multiplicative")
+# 3. Holt-Winters Multiplicative Seasonality (via ETS)
+fit_hw_mult <- ets(train_series, model = "MAM")
 forecast_hw_mult <- forecast(fit_hw_mult, h = length(train_testm$y_test))
-summary(fit_hw_mult)
-# BAD AIC
+mse_hw_mult <- mse(forecast_hw_mult$mean, train_testm$y_test)
+aic_hw_mult <- AIC(fit_hw_mult)
+results <- rbind(results, data.frame(Model = "Holt-Winters Multiplicative", MSE = mse_hw_mult, AIC = aic_hw_mult))
 
-# Fine-tune Holt-Winters Multiplicative Model
-fit_hw_mult_tuned <- ets(train_series, model = "MAM")
-forecast_hw_mult_tuned <- forecast(fit_hw_mult_tuned, h = length(train_testm$y_test))
-summary(fit_hw_mult_tuned)
-AIC(fit_hw_mult_tuned)
-# STILL BAD AIC
-
-# Combine Results with Fish Consumption using Regression + ETS
+# 4. Regression + ETS Model
 fit_reg <- lm(y_train_m ~ trainm$Month + trainm$Year + trainm$fish_cons)
 residuals_reg <- residuals(fit_reg)
 fit_res_ets <- ets(residuals_reg)
-summary(fit_reg) # Good R-squared
-AIC(fit_reg) # BEST AIC
-summary(fit_res_ets)
-AIC(fit_res_ets) # Worst AIC compared to the multiple linear regression :(
+forecast_res_ets <- forecast(fit_res_ets, h = length(train_testm$y_test))
+mse_reg_ets <- mse(forecast_res_ets$mean, train_testm$y_test)
+aic_reg <- AIC(fit_reg)  # AIC for the regression model
+aic_res_ets <- AIC(fit_res_ets)  # AIC for the ETS model on residuals
+results <- rbind(results, data.frame(Model = "Regression + ETS", MSE = mse_reg_ets, AIC = aic_res_ets))
+
+# Print the results
+print(results)
+
+### ETS Baccala Vicentina ----
+results <- data.frame(
+  Model = character(),
+  MSE = numeric(),
+  AIC = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# 1. ETS Model
+train_series_v <- ts(train_testv$y_train, start = c(2021, 1), frequency = 12)
+fit_ES_v <- ets(train_series_v)
+forecast_ES_v <- forecast(fit_ES_v, h = length(train_testv$y_test))
+mse_ets <- mse(forecast_ES_v$mean, train_testv$y_test)
+aic_ets <- AIC(fit_ES_v)
+results <- rbind(results, data.frame(Model = "ETS", MSE = mse_ets, AIC = aic_ets))
+
+# 2. Additive Seasonality (Holt-Winters via ETS)
+fit_hw_add_v <- ets(train_series_v, model = "AAA")
+forecast_hw_add_v <- forecast(fit_hw_add_v, h = length(train_testv$y_test))
+mse_hw_add <- mse(forecast_hw_add_v$mean, train_testv$y_test)
+aic_hw_add <- AIC(fit_hw_add_v)
+results <- rbind(results, data.frame(Model = "Holt-Winters Additive", MSE = mse_hw_add, AIC = aic_hw_add))
+
+# 3. Multiplicative Seasonality (Holt-Winters via ETS)
+fit_hw_mult_v <- ets(train_series_v, model = "MAM")
+forecast_hw_mult_v <- forecast(fit_hw_mult_v, h = length(train_testv$y_test))
+mse_hw_mult <- mse(forecast_hw_mult_v$mean, train_testv$y_test)
+aic_hw_mult <- AIC(fit_hw_mult_v)
+results <- rbind(results, data.frame(Model = "Holt-Winters Multiplicative", MSE = mse_hw_mult, AIC = aic_hw_mult))
+
+# 4. Regression + ETS Model
+fit_reg_v <- lm(Baccala_Vicentina ~ Month + Year + fish_cons, data = trainv)
+residuals_reg_v <- residuals(fit_reg_v)
+fit_res_ets_v <- ets(residuals_reg_v)
+forecast_res_ets_v <- forecast(fit_res_ets_v, h = length(train_testv$y_test))
+mse_reg_ets <- mse(forecast_res_ets_v$mean, train_testv$y_test)
+aic_reg_ets <- AIC(fit_res_ets_v)
+results <- rbind(results, data.frame(Model = "Regression + ETS", MSE = mse_reg_ets, AIC = aic_reg_ets))
+
+# Print the results
+print(results)
+
 
 
 
@@ -469,7 +503,7 @@ cat("Tuning KNN model with k-values:", k_values, "\n")
 for (k in k_values) {
   # Train KNN model on validation set
   knn_model <- kknn(
-    formula = Baccala_Mantecato ~ .,
+    formula = Baccala_Mantecato ~ fish_cons,
     train = train_split,
     test = validation_split,
     k = k
