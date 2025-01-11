@@ -14,6 +14,13 @@ library(lmtest)
 library(forecast)
 ```
 
+```{r}
+mse = function(pred, real){
+  mse = mean((real-pred)^2)
+  return(mse)
+}
+```
+
 ```{r SETWD, warning=FALSE}
 base_path <- "D:/Projects_GitHub/BEFD_Project/" # Set base path
 ```
@@ -78,12 +85,15 @@ This plot helps us compare the trend of sales for both products on a monthly bas
 ```{r message=FALSE, warning=FALSE, PLOT BACCALA fig.width=10}
 ggplot(data, aes(x = Date)) +
   geom_line(aes(y = Baccala_Mantecato, color = "Baccala Mantecato"), size = 1) +
+  geom_point(aes(y = Baccala_Mantecato, color = "Baccala Mantecato"), size = 2) +
   geom_line(aes(y = Baccala_Vicentina, color = "Baccala Vicentina"), size = 1) +
+  geom_point(aes(y = Baccala_Vicentina, color = "Baccala Vicentina"), size = 2) +
   labs(title = "Monthly Time Series of Baccala Mantecato and Baccala Vicentina",
        x = "Date",
        y = "Quantity") +
   theme_minimal()
 ```
+
 The sales quantities of Baccala Mantecato and Baccala Vicentina show significant differences, with Baccala Mantecato consistently having a much higher volume of sales throughout all periods observed. Additionally, Baccala Mantecato exhibits a much wider range of values, indicating greater variability in sales. In contrast, Baccala Vicentina appears more stable, with sales peaks typically occurring towards the end of the year. A similar trend is also seen for Baccala Mantecato, which experiences an uptick in sales during the final months of each year.
 
 Next, we plot the time series for both products grouped by year.
@@ -106,6 +116,7 @@ plot2 <- ggplot(data, aes(x = Month, y = Baccala_Vicentina, color = Year, group 
 
 grid.arrange(plot1, plot2, nrow = 2)
 ```
+
 Both graphs highlight the pattern mentioned earlier: for each year, there is an increase in sales during the final months of the year, particularly in September and December. 
 Additionally, regarding Baccala Mantecato, it appears that during the earlier years of sales for which we have data, the quantity sold was generally higher in the off-peak months (for example, the orange line for 2021 is higher compared to the other years). However, in the later years, the quantity sold during the peak months has increased.
 
@@ -210,7 +221,7 @@ cat("Full model:\n")
 cat("  AIC:", AIC(lr_m), "\n")
 cat("  Adjusted R²:", summary(lr_m)$adj.r.squared, "\n")
 ```
-From the results above we clearly see that the best model fit belong to the full model with all predictors: trend, monthly seasonality and fish consumption.
+As we can expect by the summary of the full model, from the AIC and Adjusted R² results we clearly see that the best model fit belong to the full model with all predictors: trend, monthly seasonality and fish consumption.
 
 Finally we will analyze the residuals.
 ```{r}
@@ -226,12 +237,13 @@ When we analyze the residuals of the linear regression model, as shown in the pl
 We also perform the Durbin-Watson test, that is used to check for autocorrelation in the residuals of a regression model.
 Since the p-value is smaller than the significance level (0.05), we don't reject the null hypothesis that the autocorrelation of the disturbances is 0.
 
-Finally we plot the predicted values and the actual ones
+Finally we plot the predicted values and the actual ones. We also compute the MSE on the test set.
 
 ```{r}
 ggplot() +
-  geom_line(aes(x = train$Date, y = train$Baccala_Mantecato, color = "Actual Values"), size = 1) +
-  geom_line(aes(x = train$Date, y = fitted(lr_m), color = "Predicted Values"), size = 1) +
+  geom_line(aes(x = data$Date, y = data$Baccala_Mantecato, color = "Actual Values"), size = 1) +
+  geom_line(aes(x = train$Date, y = fitted(lr_m), color = "Train Fitted Values"), size = 1) +
+  geom_line(aes(x = test$Date, y = predict(lr_m, newdata = test), color = "Test predicted Values"), size = 1) + 
   labs(
     title = "Time Series: Actual vs Predicted Values",
     x = "Date",
@@ -240,8 +252,10 @@ ggplot() +
   ) +
   theme_minimal() +
   theme(legend.position = "bottom", text = element_text(size = 12))
-
+mse_lrm <- mse(predict(lr_m, newdata = test), test$Baccala_Mantecato)
+print(mse_lrm)
 ```
+
 #### Baccala Vicentina
 
 The same analysis is conducted below for the Baccala Vicentina variable.
@@ -286,20 +300,21 @@ Finally we will analyze the residuals.
 resid_lr <- residuals(lr_v)
 plot(resid_lr)
 ```
+
 ```{r}
 dwtest(lr_v)
 ```
 
 When we analyze the residuals of the linear regression model, as shown in the plot below, we observe no particular patterns. The residuals appear to be randomly scattered, indicating that the model has appropriately captured the underlying trends in the data. This suggests that the assumptions of linearity, constant variance, and independence are reasonably satisfied, and the model's fit is adequate for forecasting purposes.
-On the other hand we perform the Durbin-Watson test, that is used to check for autocorrelation in the residuals of a regression model.
-Since the p-value is greater than the significance level (0.05), we reject the null hypothesis.
+On the other hand we perform the Durbin-Watson test, that is used to check for autocorrelation in the residuals of a regression model.mSince the p-value is greater than the significance level (0.05), we reject the null hypothesis.
 
-Finally we plot the predicted values and the actual ones
+Finally we plot the predicted values and the actual ones. We also compute the MSE on the test set.
 
 ```{r}
 ggplot() +
-  geom_line(aes(x = train$Date, y = train$Baccala_Vicentina, color = "Actual Values"), size = 1) +
-  geom_line(aes(x = train$Date, y = fitted(lr_v), color = "Predicted Values"), size = 1) +
+  geom_line(aes(x = data$Date, y = data$Baccala_Vicentina, color = "Actual Values"), size = 1) +
+  geom_line(aes(x = train$Date, y = fitted(lr_v), color = "Train Fitted Values"), size = 1) +
+  geom_line(aes(x = test$Date, y = predict(lr_v, newdata = test), color = "Test predicted Values"), size = 1) + 
   labs(
     title = "Time Series: Actual vs Predicted Values",
     x = "Date",
@@ -308,7 +323,8 @@ ggplot() +
   ) +
   theme_minimal() +
   theme(legend.position = "bottom", text = element_text(size = 12))
-
+mse_lrv <- mse(predict(lr_v, newdata = test), test$Baccala_Vicentina)
+print(mse_lrv)
 ```
 
 
@@ -341,32 +357,52 @@ Acf(ts_m_12)
 Pacf(ts_m_12)
 ```
 
-Now, we will build two SARIMA models. The first model will incorporate a non-seasonal differencing (with d=1), one autoregressive term (AR(1)), and a seasonal differencing with a period of 12 (to account for the yearly seasonality). The second model will instead include a moving average (MA(1)) term along with the differencing.
-```{r}
-mse = function(pred, real){
-  mse = mean((real-pred)^2)
-  return(mse)
-}
-```
+Now, we will build three SARIMA models. The first model will incorporate a non-seasonal differencing (with d=1), one autoregressive term (AR(1)), and a seasonal differencing with a period of 12 (to account for the yearly seasonality). The second model will instead include a moving average (MA(1)) term along with the differencing. The last one only incorporate the differencing.
 
 ```{r}
 # SARIMA (1,1,0)(0,1,0)[12]
-sarima_model1m <- Arima(ts_m, order=c(0,1,0), seasonal=c(0,1,0))
+sarima_model1m <- Arima(ts_m, order=c(1,1,0), seasonal=c(0,1,0))
 summary(sarima_model1m)
-mse(test$Baccala_Mantecato, forecast(sarima_model1m, h = length(y_testm))$mean)
 
 # SARIMA (0,1,1)(0,1,0)[12]
 sarima_model2m <- Arima(ts_m, order=c(0,1,1), seasonal=c(0,1,0))
 summary(sarima_model2m)
-mse(test$Baccala_Mantecato, forecast(sarima_model2m, h = length(y_testm))$mean)
+
+# SARIMA (0,1,0)(0,1,0)[12]
+sarima_model3m <- Arima(ts_m, order=c(0,1,0), seasonal=c(0,1,0))
+summary(sarima_model3m)
 ```
-Based on the AIC values, the SARIMA (0,1,1)(0,1,0)[12] model is the better model. It has a lower AIC compared to the other SARIMA models.
 
 ```{r}
-resid2 <- residuals(sarima_model2m)
-Acf(resid2)
-Pacf(resid2)
+mse(test$Baccala_Mantecato, forecast(sarima_model1m, h = length(y_testm))$mean)
+mse(test$Baccala_Mantecato, forecast(sarima_model2m, h = length(y_testm))$mean)
+mse(test$Baccala_Mantecato, forecast(sarima_model3m, h = length(y_testm))$mean)
 ```
+Based on the AIC values, the SARIMA(0,1,1)(0,1,0)[12] model is the better model. It has a lower AIC compared to the other SARIMA models. By the way, evaluating the performance on the test set, we notice that the MSE is larger for the AIC best model, while the SARIMA(0,1,0)(0,1,0)[12] perform better on the test set. We decide to continue whit the last one.
+
+```{r}
+ggplot() +
+  geom_line(aes(x = data$Date, y = data$Baccala_Mantecato, color = "Actual Values"), size = 1) +
+  geom_line(aes(x = train$Date, y = fitted(sarima_model3m), color = "Train Fitted Values (SARIMA)"), size = 1) +
+  geom_line(aes(x = test$Date, y = forecast(sarima_model3m, h = nrow(test))$mean, 
+                color = "Test Predicted Values (SARIMA)"), size = 1) +
+  labs(
+    title = "Time Series: Actual vs Predicted Values (SARIMA Model)",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", text = element_text(size = 12))
+```
+
+
+```{r}
+resid3 <- residuals(sarima_model3m)
+Acf(resid3)
+Pacf(resid3)
+```
+Residuals does not suggest a really good fit but, as said before, the best test performance are reached by the selected model.
 
 #### Baccala Vicentina
 
@@ -395,18 +431,43 @@ Now, we will build a SARIMA model model that incorporate only a seasonal differe
 The parameter D=2 lead us to lower AIC but a bigger mse, this is a case of overfitting.
 
 ```{r}
-# SARIMA (0,0,0)(0,1,0)[12]
-sarima_model1v <- Arima(ts_v, order=c(0,1,1), seasonal=c(0,0,0))
-summary(sarima_model1v)
-mse(test$Baccala_Vicentina, forecast(sarima_model1v, h = length(y_testv))$mean)
+auto_sarima_modelv <- auto.arima(ts_v)
+summary(auto_sarima_modelv)
 
-
-sarima_model2v <- Arima(ts_v, order=c(0,0,0), seasonal=c(0,2,2))
+# SARIMA(0,0,0)(0,1,0)[12]
+sarima_model2v <- Arima(ts_v, order=c(0,0,0), seasonal=c(0,1,0))
 summary(sarima_model2v)
+```
+
+```{r}
+resid2 <- residuals(sarima_model2v)
+Acf(resid2)
+Pacf(resid2)
+```
+
+The best model based on AIC is supposed to be the SARIMA(0,0,0)(0,1,0)[12].
+```{r}
 mse(test$Baccala_Vicentina, forecast(sarima_model2v, h = length(y_testv))$mean)
 ```
 
 Note: We also tried different configurations, expecially after we saw the residuals plot but at the end, this remain the best model possible.
+
+
+```{r}
+ggplot() +
+  geom_line(aes(x = data$Date, y = data$Baccala_Vicentina, color = "Actual Values"), size = 1) +
+  geom_line(aes(x = train$Date, y = fitted(sarima_model2v), color = "Train Fitted Values (SARIMA)"), size = 1) +
+  geom_line(aes(x = test$Date, y = forecast(sarima_model2v, h = nrow(test))$mean, 
+                color = "Test Predicted Values (SARIMA)"), size = 1) +
+  labs(
+    title = "Time Series: Actual vs Predicted Values (SARIMA Model)",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", text = element_text(size = 12))
+```
 
 
 
