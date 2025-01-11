@@ -25,7 +25,6 @@ mse = function(pred, real){
 base_path <- "D:/Projects_GitHub/BEFD_Project/" # Set base path
 ```
 
-
 ## Data Loading and Preprocessing
 
 ```{r DATA LOAD, message=FALSE, warning=FALSE}
@@ -253,8 +252,10 @@ ggplot() +
   ) +
   theme_minimal() +
   theme(legend.position = "bottom", text = element_text(size = 12))
-mse_lrm <- mse(predict(lr_m, newdata = test), test$Baccala_Mantecato)
-print(mse_lrm)
+
+mse_train_lrm <- mean(resid_lr^2)
+mse_test_lrm <- mse(predict(lr_m, newdata = test), test$Baccala_Mantecato)
+print(mse_test_lrm)
 ```
 
 #### Baccala Vicentina
@@ -307,7 +308,7 @@ checkresiduals(lr_v)
 
 
 ```{r}
-resid_lr <- residuals(lr_v)
+resid_lrv <- residuals(lr_v)
 dwtest(lr_v)
 ```
 
@@ -330,8 +331,9 @@ ggplot() +
   ) +
   theme_minimal() +
   theme(legend.position = "bottom", text = element_text(size = 12))
-mse_lrv <- mse(predict(lr_v, newdata = test), test$Baccala_Vicentina)
-print(mse_lrv)
+mse_test_lrv <- mse(predict(lr_v, newdata = test), test$Baccala_Vicentina)
+mse_train_lrv <- mean(resid_lrv^2)
+print(mse_test_lrv)
 ```
 
 
@@ -404,11 +406,14 @@ ggplot() +
   ) +
   theme_minimal() +
   theme(legend.position = "bottom", text = element_text(size = 12))
+
+mse_test_sarimam <- mse(test$Baccala_Mantecato, forecast(sarima_model3m, h = length(y_testm))$mean)
 ```
 
 
 ```{r}
 resid3 <- residuals(sarima_model3m)
+mse_train_sarimam <- mean(resid3^2)
 checkresiduals(sarima_model3m)
 Pacf(resid3)
 ```
@@ -461,7 +466,8 @@ Pacf(resid2)
 The best model based on AIC is supposed to be the SARIMA(0,0,0)(0,1,0)[12].
 
 ```{r}
-mse(test$Baccala_Vicentina, forecast(sarima_model2v, h = length(y_testv))$mean)
+mse_train_sarimav <- mean(resid2^2)
+mse_test_sarimav <- mse(test$Baccala_Vicentina, forecast(sarima_model2v, h = length(y_testv))$mean)
 ```
 
 Note: We also tried different configurations, expecially after we saw the residuals plot but at the end, this remain the best model possible.
@@ -482,11 +488,9 @@ ggplot() +
   theme(legend.position = "bottom", text = element_text(size = 12))
 ```
 
-
-
-
 ### Prophet Model
 
+#### Baccala Mantecato
 We start by creating the dataset to give to the function prophet()
 
 ```{r}
@@ -522,8 +526,8 @@ future$cap <- max(proph_md$y) * 1.1
 forecast_future <- predict(proph_m, future_logistic)
 test_m <- tail(forecast_future, 10)
 
-mean((test$Baccala_Mantecato - test_m$yhat)^2)
-
+mse_test_prm <- mean((test$Baccala_Mantecato - test_m$yhat)^2)
+mse_test_prm
 ```
 
 
@@ -545,45 +549,119 @@ ggplot(forecast_future, aes(x =ds)) +
 We observed the same staff of other models, the mse value (we will perfrom a final comparison between all the models) is high and looking at the plot, we are not able to fit well the function under the data.
 
 ```{r}
-# Supponiamo che tu abbia già un dataframe 'proph_md' con le colonne 'ds' e 'y'
+res_proph <- train$Baccala_Mantecato - head(forecast_future$yhat, 38)
+mse_train_prm <- mean(res_proph^2)
+checkresiduals(res_proph)
+```
 
-# Definisci manualmente le date dei changepoints
-changepoint_dates <- as.Date(c("2021-05-01","2021-12-01",
-                               "2022-05-01","2022-12-01",
-                               "2023-05-01","2023-12-01"))
+#### Baccala Vicentina
 
-proph_m <- prophet(proph_md, 
-                   growth = "linear", 
-                   n.changepoints = 5,  # Puoi mantenere il numero di changepoints se desideri
-                   changepoints = changepoint_dates,  # Passa i changepoints specificati
-                   yearly.seasonality = TRUE, 
-                   seasonality.mode = 'multiplicative')
+```{r}
+library(prophet)
 
-future <- make_future_dataframe(proph_m, periods = 10, freq = "month", include_history = T)
-future$cap <- max(proph_md$y) * 1.2
-forecast_future <- predict(proph_m, future_logistic)
-test_m <- tail(forecast_future, 10)
+proph_vd <- data.frame(
+  ds = train[,"Date"],
+  y = train[,"Baccala_Vicentina"]
+)
+colnames(proph_vd) <- c("ds", "y")
+proph_vd$cap <- max(proph_vd$y) * 1.1
+str(proph_vd)
+```
 
-plot(proph_m, predict(proph_m, future))+add_changepoints_to_plot(proph_m, threshold=0)
+```{r message=FALSE, warning=FALSE}
+proph_logistic=prophet(proph_vd,  growth="logistic", n.changepoints=5, 
+           yearly.seasonality=TRUE, 
+           seasonality.mode='multiplicative')
 
-mean((test$Baccala_Mantecato - test_m$yhat)^2)
+proph_v=prophet(proph_vd,  growth="linear", n.changepoints=5, 
+           yearly.seasonality=TRUE, 
+           seasonality.mode='multiplicative')
+
+future_logistic <- make_future_dataframe(proph_logistic, periods = 10, freq = "month", include_history = T)
+future_logistic$cap <- max(proph_vd$y) * 1.1
+forecast_future_logistic <- predict(proph_logistic, future_logistic)
+test_logistic <- tail(forecast_future_logistic, 10)
+
+mean((test$Baccala_Vicentina - test_logistic$yhat)^2)
+
+future <- make_future_dataframe(proph_v, periods = 10, freq = "month", include_history = T)
+future$cap <- max(proph_vd$y) * 1.1
+forecast_future <- predict(proph_v, future_logistic)
+test_v <- tail(forecast_future, 10)
+
+mse_test_prv <- mean((test$Baccala_Vicentina - test_v$yhat)^2)
+mse_test_prv
 ```
 
 
+
 ```{r}
-res_proph <- test$Baccala_Mantecato - test_m$yhat
+forecast_future$y_true <- data$Baccala_Vicentina
+forecast_future <- forecast_future[,c("yhat", "ds", "y_true")]
+ggplot(forecast_future, aes(x =ds)) +
+  geom_line(aes(y = y_true, color = "Actual")) +  # Valori reali
+  geom_line(aes(y = yhat, color = "Predicted")) +  # Valori previsti
+  labs(
+    title = "Actual vs Predicted (Prophet)",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+res_proph <- train$Baccala_Vicentina - head(forecast_future$yhat, 38)
+mse_train_prv <- mean(res_proph^2)
 checkresiduals(res_proph)
 ```
 
 
 
+## Results
 
-## sfaf
+```{r}
+name_models <- c("Linear Regression", "SARIMA", "Prophet")
+
+mse_train_m <- c(mse_train_lrm, mse_train_sarimam, mse_train_prm)
+mse_train_v <- c(mse_train_lrv, mse_train_sarimav, mse_train_prv)
+
+mse_test_m <- c(mse_test_lrm, mse_test_sarimam, mse_test_prm)
+mse_test_v <- c(mse_test_lrv, mse_test_sarimav, mse_test_prv)
+
+results <- data.frame(
+  Model = name_models,
+  
+  MSE_Train_Mantecato = mse_train_m,
+  MSE_Train_Vicentina = mse_train_v,
+  
+  MSE_Test_Mantecato = mse_test_m,
+  MSE_Test_Vicentina = mse_test_v
+)
+results
+```
+
+```{r message=FALSE, warning=FALSE}
+plot_results = function(results, y_name) {
+  ggplot(results, aes(x = Model, fill = "MSE")) +   # Set fill to a neutral color
+    geom_bar(aes_string(y = y_name), stat = "identity", position = "dodge") +
+    scale_fill_manual(values = "#6E6E6E") +  # Gray color for the bars, typical for scientific reports
+    labs(title = paste("Comparison of", gsub("_", " ", y_name)), x = "Model", y = "MSE", fill = "Model") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.position = "none",  # Remove legend since it's not necessary
+          plot.title = element_text(hjust = 0.5))  # Center the title
+}
 
 
+# Plot for MSE of Train and Test on Mantecato and Vicentina
+plot_results(results, "MSE_Train_Mantecato")
+plot_results(results, "MSE_Test_Mantecato")
 
+plot_results(results, "MSE_Train_Vicentina")
+plot_results(results, "MSE_Test_Vicentina")
 
-
+```
 
 
 
