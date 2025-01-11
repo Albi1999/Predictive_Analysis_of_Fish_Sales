@@ -1,22 +1,3 @@
-TODO: UNDERSTAND ALL THE MODEL ADDED AND COMMENT IT 
-
-  FATTI
-  
-    MULTIPLE LINEAR REGRESSION-->TOTO
-    SARIMA-->TOTO
-    
-    GAM-->FLAVIO
-    ARIMAX-->FLAVIO
-     
-    EXPONENTIAL SMOOTHING-->ALBI
-    KNN-->ALBI
-    
-  DA FARE
-    
-    LOCAL REGRESSION-->ALBI
-    SPLINES-->TOTO
-
-
 Upload only the sections of code that you are confident work correctly and are ready for submission in the exam. Include comments where possible for better clarity and understanding.
 
 
@@ -247,7 +228,8 @@ As we can expect by the summary of the full model, from the AIC and Adjusted R²
 Finally we will analyze the residuals.
 ```{r}
 resid_lr <- residuals(lr_m)
-plot(resid_lr)
+mse_train_lrm <- mean(resid_lr^2)
+checkresiduals(lr_m)
 ```
 
 ```{r}
@@ -279,8 +261,8 @@ ggplot() +
   theme_minimal() +
   theme(legend.position = "bottom")
   
-mse_lrm <- mse(predict(lr_m, newdata = test), test$Baccala_Mantecato)
-print(mse_lrm)
+mse_test_lrm <- mse(predict(lr_m, newdata = test), test$Baccala_Mantecato)
+print(mse_test_lrm)
 ```
 
 #### Baccala Vicentina
@@ -329,7 +311,8 @@ Finally we will analyze the residuals.
 
 ```{r}
 resid_lr <- residuals(lr_v)
-plot(resid_lr)
+mse_train_lrv <- mean(resid_lr^2)
+checkresiduals(lr_v)
 ```
 
 
@@ -360,8 +343,8 @@ ggplot() +
   theme_minimal() +
   theme(legend.position = "bottom")
 
-mse_lrv <- mse(predict(lr_v, newdata = test), test$Baccala_Vicentina)
-print(mse_lrv)
+mse_test_lrv <- mse(predict(lr_v, newdata = test), test$Baccala_Vicentina)
+print(mse_test_lrv)
 ```
 
 ### SARIMA Model
@@ -411,7 +394,8 @@ summary(sarima_model3m)
 ```{r}
 mse(test$Baccala_Mantecato, forecast(sarima_model1m, h = length(y_testm))$mean)
 mse(test$Baccala_Mantecato, forecast(sarima_model2m, h = length(y_testm))$mean)
-mse(test$Baccala_Mantecato, forecast(sarima_model3m, h = length(y_testm))$mean)
+mse_test_sarimam <- mse(test$Baccala_Mantecato, forecast(sarima_model3m, h = length(y_testm))$mean)
+mse_test_sarimam
 ```
 
 
@@ -441,6 +425,7 @@ ggplot() +
 
 ```{r}
 resid3 <- residuals(sarima_model3m)
+mse_train_sarimam <- mean(resid3^2)
 Acf(resid3, main = "ACF for SARIMA Residuals of Baccala Mantecato", col = "#FF7F7F", lwd = 2)
 Pacf(resid3, main = "PACF for SARIMA Residuals of Baccala Mantecato", col = "#6BC3FF", lwd = 2)
 ```
@@ -485,6 +470,7 @@ summary(sarima_model2v)
 
 ```{r}
 resid2 <- residuals(sarima_model2v)
+mse_train_sarimav <- mean(resid2^2)
 Acf(resid2, main = "ACF for SARIMA Residuals of Baccala Vicentina", col = "#FF7F7F", lwd = 2)
 Pacf(resid2, main = "PACF for SARIMA Residuals of Baccala Vicentina", col = "#6BC3FF", lwd = 2)
 ```
@@ -492,7 +478,8 @@ Pacf(resid2, main = "PACF for SARIMA Residuals of Baccala Vicentina", col = "#6B
 The best model based on AIC is supposed to be the SARIMA(0,0,0)(0,1,0)[12].
 
 ```{r}
-mse(test$Baccala_Vicentina, forecast(sarima_model2v, h = length(y_testv))$mean)
+mse_test_sarimav <- mse(test$Baccala_Vicentina, forecast(sarima_model2v, h = length(y_testv))$mean)
+mse_test_sarimav
 ```
 
 Note: We also tried different configurations, expecially after we saw the residuals plot but at the end, this remain the best model possible.
@@ -668,6 +655,40 @@ res_proph <- train$Baccala_Vicentina - head(forecast_future$yhat, 38)
 mse_train_prv <- mean(res_proph^2)
 checkresiduals(res_proph)
 ```
+
+## Results
+
+```{r}
+name_models <- c("Linear Regression", "SARIMA", "Prophet")
+
+mse_train_m <- c(mse_train_lrm, mse_train_sarimam, mse_train_prm)
+mse_train_v <- c(mse_train_lrv, mse_train_sarimav, mse_train_prv)
+
+mse_test_m <- c(mse_test_lrm, mse_test_sarimam, mse_test_prm)
+mse_test_v <- c(mse_test_lrv, mse_test_sarimav, mse_test_prv)
+
+results <- data.frame(
+  Model = name_models,
+  
+  MSE_Train_Mantecato = mse_train_m,
+  MSE_Train_Vicentina = mse_train_v,
+  
+  MSE_Test_Mantecato = mse_test_m,
+  MSE_Test_Vicentina = mse_test_v
+)
+results
+```
+
+```{r message=FALSE, warning=FALSE}
+plot_results(results, "MSE_Train_Mantecato")
+plot_results(results, "MSE_Test_Mantecato")
+
+plot_results(results, "MSE_Train_Vicentina")
+plot_results(results, "MSE_Test_Vicentina")
+
+```
+
+
 
 
 ### GAM Model ----
@@ -1076,6 +1097,3 @@ For both models:
 - **Baccalà Vicentina:** `k = 5` is also the optimal choice, though the model shows slightly higher errors than mantecato due to the nature of the data.
 
 The chosen `k` values minimize overfitting while maintaining acceptable predictive accuracy for practical use.
-
-
-

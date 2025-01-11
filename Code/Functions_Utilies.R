@@ -7,6 +7,17 @@ split_train_test <- function(data, name_y, prop) {
   return(list(train = train, y_train = y_train, test = test, y_test = y_test))
 }
 
+plot_results = function(results, y_name) {
+  ggplot(results, aes(x = Model, fill = "MSE")) +
+    geom_bar(aes_string(y = y_name), stat = "identity", position = "dodge") +
+    scale_fill_manual(values = "#6E6E6E") +
+    labs(title = paste("Comparison of", gsub("_", " ", y_name)), x = "Model", y = "MSE", fill = "Model") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.position = "none",
+          plot.title = element_text(hjust = 0.5))
+}
+
 mse = function(pred, real){
   mse = mean((real-pred)^2)
   return(mse)
