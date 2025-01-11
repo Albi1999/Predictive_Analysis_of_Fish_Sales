@@ -226,11 +226,11 @@ As we can expect by the summary of the full model, from the AIC and Adjusted R²
 
 Finally we will analyze the residuals.
 ```{r}
-resid_lr <- residuals(lr_m)
-plot(resid_lr)
+checkresiduals(lr_m)
 ```
 
 ```{r}
+resid_lr <- residuals(lr_m)
 dwtest(lr_m)
 ```
 
@@ -302,12 +302,12 @@ The model with only the monthly seasonality performs better than the full model 
 Finally we will analyze the residuals.
 
 ```{r}
-resid_lr <- residuals(lr_v)
-plot(resid_lr)
+checkresiduals(lr_v)
 ```
 
 
 ```{r}
+resid_lr <- residuals(lr_v)
 dwtest(lr_v)
 ```
 
@@ -409,11 +409,12 @@ ggplot() +
 
 ```{r}
 resid3 <- residuals(sarima_model3m)
-Acf(resid3)
+checkresiduals(sarima_model3m)
 Pacf(resid3)
 ```
 
 Residuals does not suggest a really good fit but, as said before, the best test performance are reached by the selected model.
+Improving the model with AR o MA terms lead us to overfitting.
 
 #### Baccala Vicentina
 
@@ -480,6 +481,110 @@ ggplot() +
   theme_minimal() +
   theme(legend.position = "bottom", text = element_text(size = 12))
 ```
+
+
+
+
+### Prophet Model
+
+We start by creating the dataset to give to the function prophet()
+
+```{r}
+library(prophet)
+
+proph_md <- data.frame(
+  ds = train[,"Date"],
+  y = train[,"Baccala_Mantecato"]
+)
+colnames(proph_md) <- c("ds", "y")
+proph_md$cap <- max(proph_md$y) * 1.1
+str(proph_md)
+```
+
+```{r message=FALSE, warning=FALSE}
+proph_logistic=prophet(proph_md,  growth="logistic", n.changepoints=5, 
+           yearly.seasonality=TRUE, 
+           seasonality.mode='multiplicative')
+
+proph_m=prophet(proph_md,  growth="linear", n.changepoints=5, 
+           yearly.seasonality=TRUE, 
+           seasonality.mode='multiplicative')
+
+future_logistic <- make_future_dataframe(proph_logistic, periods = 10, freq = "month", include_history = T)
+future_logistic$cap <- max(proph_md$y) * 1.1
+forecast_future_logistic <- predict(proph_logistic, future_logistic)
+test_logistic <- tail(forecast_future_logistic, 10)
+
+mean((test$Baccala_Mantecato - test_logistic$yhat)^2)
+
+future <- make_future_dataframe(proph_m, periods = 10, freq = "month", include_history = T)
+future$cap <- max(proph_md$y) * 1.1
+forecast_future <- predict(proph_m, future_logistic)
+test_m <- tail(forecast_future, 10)
+
+mean((test$Baccala_Mantecato - test_m$yhat)^2)
+
+```
+
+
+
+```{r}
+forecast_future$y_true <- data$Baccala_Mantecato
+forecast_future <- forecast_future[,c("yhat", "ds", "y_true")]
+ggplot(forecast_future, aes(x =ds)) +
+  geom_line(aes(y = y_true, color = "Actual")) +  # Valori reali
+  geom_line(aes(y = yhat, color = "Predicted")) +  # Valori previsti
+  labs(
+    title = "Actual vs Predicted (Prophet)",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  theme_minimal()
+```
+We observed the same staff of other models, the mse value (we will perfrom a final comparison between all the models) is high and looking at the plot, we are not able to fit well the function under the data.
+
+```{r}
+# Supponiamo che tu abbia già un dataframe 'proph_md' con le colonne 'ds' e 'y'
+
+# Definisci manualmente le date dei changepoints
+changepoint_dates <- as.Date(c("2021-05-01","2021-12-01",
+                               "2022-05-01","2022-12-01",
+                               "2023-05-01","2023-12-01"))
+
+proph_m <- prophet(proph_md, 
+                   growth = "linear", 
+                   n.changepoints = 5,  # Puoi mantenere il numero di changepoints se desideri
+                   changepoints = changepoint_dates,  # Passa i changepoints specificati
+                   yearly.seasonality = TRUE, 
+                   seasonality.mode = 'multiplicative')
+
+future <- make_future_dataframe(proph_m, periods = 10, freq = "month", include_history = T)
+future$cap <- max(proph_md$y) * 1.2
+forecast_future <- predict(proph_m, future_logistic)
+test_m <- tail(forecast_future, 10)
+
+plot(proph_m, predict(proph_m, future))+add_changepoints_to_plot(proph_m, threshold=0)
+
+mean((test$Baccala_Mantecato - test_m$yhat)^2)
+```
+
+
+```{r}
+res_proph <- test$Baccala_Mantecato - test_m$yhat
+checkresiduals(res_proph)
+```
+
+
+
+
+## sfaf
+
+
+
+
+
+
 
 
 
