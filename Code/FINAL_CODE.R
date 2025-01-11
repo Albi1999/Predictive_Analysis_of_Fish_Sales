@@ -174,7 +174,7 @@ However, within the bands, the autocorrelations exhibit a sinusoidal pattern, su
 We will analyze the residuals of future models to confirm or disprove the presence of this seasonality.
 
 
-# TRAIN/TEST SPLIT ----
+## TRAIN/TEST SPLIT ----
 
 In this section, we perform a train-test split to prepare the data for model training and evaluation. We divide the time series data for both Baccala Mantecato and Baccala Vicentina into training and testing sets, with 90% of the data allocated for training and the remaining 10% for testing.
 
@@ -509,6 +509,7 @@ ggplot() +
   theme_minimal() +
   theme(legend.position = "bottom", text = element_text(size = 12))
 ```
+
 
 ## GAM Model ----
 
