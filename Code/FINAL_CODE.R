@@ -22,7 +22,7 @@ library(lmtest)
 ```
 
 ```{r SETWD, warning=FALSE}
-base_path <- "D:/Projects_GitHub/BEFD_Project/" # Set base path
+base_path <- "C:/Users/flavi/OneDrive/Documenti/GitHub/BEFD_Project/" # Set base path
 source(file.path(base_path, "Code/Functions_Utilies.R"))
 ```
 
@@ -503,7 +503,105 @@ ggplot() +
   theme(legend.position = "bottom")
 
 ```
+#### ARMAX
 
+Now following the same reasoning of SARIMA models, we compare to them the same models but also using the fish consumption information as xreg, to see if it improves our results
+
+###Baccalà mantecato
+
+```{r}
+sarimax_model1m <- Arima(ts_m, order = c(1, 1, 0), seasonal = c(0, 1, 0), xreg = train$fish_cons)
+sarimax_model2m <- Arima(ts_m, order = c(0, 1, 1), seasonal = c(0, 1, 0), xreg = train$fish_cons)
+sarimax_model3m <- Arima(ts_m, order = c(0, 1, 0), seasonal = c(0, 1, 0), xreg = train$fish_cons)
+```
+Once we have fitted the models, we compare them to the previous SARIMA considering the AIC as metric
+```{r}
+AIC(sarima_model1m, sarimax_model1m)
+AIC(sarima_model2m, sarimax_model2m)
+AIC(sarima_model3m, sarimax_model3m)
+```
+It is clear that using the fish consumption data we improve the models, but as we've seen for SARIMAs, considering only AIC may not be enough, so now we also look at the MSEs
+```{r}
+mse(test$Baccala_Mantecato, forecast(sarima_model1m, h = length(y_testm))$mean)
+mse(test$Baccala_Mantecato, forecast(sarimax_model1m, h = length(y_testm),xreg = test$fish_cons)$mean)
+
+mse(test$Baccala_Mantecato, forecast(sarima_model2m, h = length(y_testm))$mean)
+mse(test$Baccala_Mantecato, forecast(sarimax_model2m, h = length(y_testm),xreg = test$fish_cons)$mean)
+
+mse(test$Baccala_Mantecato, forecast(sarima_model3m, h = length(y_testm))$mean)
+mse(test$Baccala_Mantecato, forecast(sarimax_model3m, h = length(y_testm),xreg = test$fish_cons)$mean)
+
+```
+We see that in terms of MSE, SARIMAX brings to huge improvements for all 3 the considered models reducing the MSEs by approximately 50%. 
+Following the same reasoning as before, and considering both the AIC and the MSE, among the models we select the ARMAX(0,1,0)(0,1,0)[12].
+
+Now we look at that model prediction on the test set compared to the respective original SARIMA
+```{r}
+ggplot() +
+  geom_line(aes(x = data$Date, y = data$Baccala_Mantecato, color = "Actual Values"), size = 1) +
+  geom_line(aes(x = test$Date, y = forecast(sarima_model3m, h = nrow(test))$mean, 
+                color = "Predicted Values (Test) SARIMA"), size = 1) +
+  geom_line(aes(x = test$Date, y = forecast(sarimax_model3m, h = nrow(test), xreg = test$fish_cons)$mean, 
+                color = "Predicted Values (Test) SARIMAX"), size = 1) +
+  scale_color_manual(values = c("Actual Values" = "black", 
+                                "Predicted Values (Test) SARIMA" = "#6BC3FF",
+                                "Predicted Values (Test) SARIMAX" = "#FF7F7F"),
+                     labels = c("Actual Values", "Predicted Values (Test) SARIMA", "Predicted Values (Test) SARIMAX")) +
+  labs(
+    title = "Actual vs Predicted Values for Baccala Mantecato (SARIMA vs SARIMAX)",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+```
+From the plot we clearly see the improvement obtained with the SARIMAX version, confirming that the fish_cons variable helps on predicting future orders quantity.
+
+Now we see the residuals 
+```{r}
+resid3_sarimax <- residuals(sarimax_model3m)
+Acf(resid3_sarimax, main = "ACF for SARIMAX Residuals of Baccala Mantecato", col = "#FF7F7F", lwd = 2)
+Pacf(resid3_sarimax, main = "PACF for SARIMAX Residuals of Baccala Mantecato", col = "#6BC3FF", lwd = 2)
+```
+From the acf we have the doubt that we are missing an autoregressive component, but including it leads to lower performances on the test set, so we decide to accept that loss of information showed in the residuals to avoid overfitting.
+
+###Baccala Vicentina
+Following the same approach, we try to study the effects of considering fish_cons on Baccala_vicentina and compare it to the previously selected SARIMA(0,1,1)(0,1,0)[12] model
+```{r}
+sarimax_model2v <- Arima(ts_v, order = c(0, 1, 1), seasonal = c(0, 1, 0), xreg = train$fish_cons)
+
+AIC(sarima_model2v, sarimax_model2v)
+
+
+mse(test$Baccala_Vicentina, forecast(sarima_model2v, h = length(y_testv))$mean)
+mse(test$Baccala_Vicentina, forecast(sarimax_model2v, h = length(y_testv), xreg = test$fish_cons)$mean)
+
+
+```
+Surprisingly for the Baccala_Vicentina, the originally selected SARIMA model performs better than the SARIMAX one considering both AIC and MSE, so we discard it and select the original SARIMA.
+```{r}
+ggplot() +
+  geom_line(aes(x = data$Date, y = data$Baccala_Vicentina, color = "Actual Values"), size = 1) +
+  geom_line(aes(x = test$Date, y = forecast(sarima_model2v, h = nrow(test))$mean, 
+                color = "Predicted Values (Test) SARIMA"), size = 1) +
+  geom_line(aes(x = test$Date, y = forecast(sarimax_model2v, h = nrow(test), xreg = test$fish_cons)$mean, 
+                color = "Predicted Values (Test) SARIMAX"), size = 1) +
+  scale_color_manual(values = c("Actual Values" = "black", 
+                                "Predicted Values (Test) SARIMA" = "#6BC3FF",
+                                "Predicted Values (Test) SARIMAX" = "#FF7F7F"),
+                     labels = c("Actual Values", "Predicted Values (Test) SARIMA", "Predicted Values (Test) SARIMAX")) +
+  labs(
+    title = "Actual vs Predicted Values for Baccala Vicentina (SARIMA vs SARIMAX)",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+As we can see from the plot, the 2 predictions are very similar but probably fish_cons and the peak that occurs every December except for the last one, which coincidentally is the test set, lead the SARIMAX model to overestimate the quantities sold, thus explaining the worse results in terms of AIC and MSE obtained earlier. So we confirm that for Baccala_Vicentina we discard the SARIMAX model.
 
 
 ### Prophet Model
@@ -699,7 +797,7 @@ gam_vicentina <- gam(Baccala_Vicentina ~  Month, data = train)
 summary(gam_vicentina)
 ```
 
-
+#da togliere?
 ### ARMAX Model ----
 
 ```{r}
