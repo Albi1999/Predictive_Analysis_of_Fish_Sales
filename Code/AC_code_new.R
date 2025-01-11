@@ -326,60 +326,92 @@ plot_actual_vs_forecast(
 # There is a clear discrepancy in the scale or trend alignment of the forecasts, particularly with over-forecasting for later periods.
 
 ## 4.3 Exponential Smoothing ----
-fit_ES <- ets(train_series)
-summary(fit_ES)
-AIC(fit_ES)
-# Metrics and Diagnostics:
-#   AIC, AICc, BIC:
-#     AIC = 304.7, AICc = 322.5, BIC = 331.1. 
-#     While the AIC is acceptable, higher BIC suggests the model may be overfitting due to complexity.
-#   Training Set Error:
-#     Mean Error (ME): -0.14, which is very close to zero, showing minimal bias in predictions.
-#     RMSE: 3.72 and MAPE: 10.78%. These values are similar to ARIMA's, 
-#     indicating that ETS performs comparably in training.
-#   Residual ACF (Autocorrelation):
-#     Residual ACF1 = 0.14, indicating a small but present autocorrelation in residuals. 
-#     This hints that the model hasn't fully captured temporal dependencies.
 
-forecast_ES <- forecast(fit_ES, h = length(train_testm$y_test))
-plot(forecast_ES)
-# The confidence intervals widen with future forecasts, as expected in exponential smoothing models.
-# The forecast follows a gradual trend due to the lack of explicit seasonality (model uses additive components only).
-
-plot_actual_vs_forecast(
-  actual = train_testm$y_test,
-  forecast = as.numeric(forecast_ES$mean),
-  model_name = "Exponential Smoothing"
+### ETS Baccala Mantecato ----
+# Initialize a data frame to store the results
+results <- data.frame(
+  Model = character(),
+  MSE = numeric(),
+  AIC = numeric(),
+  stringsAsFactors = FALSE
 )
-# There’s a clear divergence between actual values (blue line) and forecasted values (red dashed line). 
-# The forecast fails to capture the magnitude of fluctuations in the data, particularly the peak at time point 2 and the drop at time point 3.
-# This highlights the model’s inability to account for potential seasonality or non-linear trends.
 
+# 1. ETS Model
+train_series <- ts(train_testm$y_train, start = c(2021, 1), frequency = 12)
+fit_ES <- ets(train_series)
+forecast_ES <- forecast(fit_ES, h = length(train_testm$y_test))
+mse_ets <- mse(forecast_ES$mean, train_testm$y_test)
+aic_ets <- AIC(fit_ES)
+results <- rbind(results, data.frame(Model = "ETS", MSE = mse_ets, AIC = aic_ets))
 
-### Exponential Smoothing Improvements with Fine-Tuning ----
+# 2. Additive Seasonality (Holt-Winters via ETS)
+fit_hw_add <- ets(train_series, model = "AAA")
+forecast_hw_add <- forecast(fit_hw_add, h = length(train_testm$y_test))
+mse_hw_add <- mse(forecast_hw_add$mean, train_testm$y_test)
+aic_hw_add <- AIC(fit_hw_add)
+results <- rbind(results, data.frame(Model = "Holt-Winters Additive", MSE = mse_hw_add, AIC = aic_hw_add))
 
-# Include Additive and Multiplicative Seasonality using Holt-Winters
-fit_hw_mult <- hw(train_series, seasonal = "multiplicative")
+# 3. Holt-Winters Multiplicative Seasonality (via ETS)
+fit_hw_mult <- ets(train_series, model = "MAM")
 forecast_hw_mult <- forecast(fit_hw_mult, h = length(train_testm$y_test))
-summary(fit_hw_mult)
-# BAD AIC
+mse_hw_mult <- mse(forecast_hw_mult$mean, train_testm$y_test)
+aic_hw_mult <- AIC(fit_hw_mult)
+results <- rbind(results, data.frame(Model = "Holt-Winters Multiplicative", MSE = mse_hw_mult, AIC = aic_hw_mult))
 
-# Fine-tune Holt-Winters Multiplicative Model
-fit_hw_mult_tuned <- ets(train_series, model = "MAM")
-forecast_hw_mult_tuned <- forecast(fit_hw_mult_tuned, h = length(train_testm$y_test))
-summary(fit_hw_mult_tuned)
-AIC(fit_hw_mult_tuned)
-# STILL BAD AIC
-
-# Combine Results with Fish Consumption using Regression + ETS
+# 4. Regression + ETS Model
 fit_reg <- lm(y_train_m ~ trainm$Month + trainm$Year + trainm$fish_cons)
 residuals_reg <- residuals(fit_reg)
 fit_res_ets <- ets(residuals_reg)
-summary(fit_reg) # Good R-squared
-AIC(fit_reg) # BEST AIC
-summary(fit_res_ets)
-AIC(fit_res_ets) # Worst AIC compared to the multiple linear regression :(
+forecast_res_ets <- forecast(fit_res_ets, h = length(train_testm$y_test))
+mse_reg_ets <- mse(forecast_res_ets$mean, train_testm$y_test)
+aic_reg <- AIC(fit_reg)  # AIC for the regression model
+aic_res_ets <- AIC(fit_res_ets)  # AIC for the ETS model on residuals
+results <- rbind(results, data.frame(Model = "Regression + ETS", MSE = mse_reg_ets, AIC = aic_res_ets))
 
+# Print the results
+print(results)
+
+### ETS Baccala Vicentina ----
+results <- data.frame(
+  Model = character(),
+  MSE = numeric(),
+  AIC = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# 1. ETS Model
+train_series_v <- ts(train_testv$y_train, start = c(2021, 1), frequency = 12)
+fit_ES_v <- ets(train_series_v)
+forecast_ES_v <- forecast(fit_ES_v, h = length(train_testv$y_test))
+mse_ets <- mse(forecast_ES_v$mean, train_testv$y_test)
+aic_ets <- AIC(fit_ES_v)
+results <- rbind(results, data.frame(Model = "ETS", MSE = mse_ets, AIC = aic_ets))
+
+# 2. Additive Seasonality (Holt-Winters via ETS)
+fit_hw_add_v <- ets(train_series_v, model = "AAA")
+forecast_hw_add_v <- forecast(fit_hw_add_v, h = length(train_testv$y_test))
+mse_hw_add <- mse(forecast_hw_add_v$mean, train_testv$y_test)
+aic_hw_add <- AIC(fit_hw_add_v)
+results <- rbind(results, data.frame(Model = "Holt-Winters Additive", MSE = mse_hw_add, AIC = aic_hw_add))
+
+# 3. Multiplicative Seasonality (Holt-Winters via ETS)
+fit_hw_mult_v <- ets(train_series_v, model = "MAM")
+forecast_hw_mult_v <- forecast(fit_hw_mult_v, h = length(train_testv$y_test))
+mse_hw_mult <- mse(forecast_hw_mult_v$mean, train_testv$y_test)
+aic_hw_mult <- AIC(fit_hw_mult_v)
+results <- rbind(results, data.frame(Model = "Holt-Winters Multiplicative", MSE = mse_hw_mult, AIC = aic_hw_mult))
+
+# 4. Regression + ETS Model
+fit_reg_v <- lm(Baccala_Vicentina ~ Month + Year + fish_cons, data = trainv)
+residuals_reg_v <- residuals(fit_reg_v)
+fit_res_ets_v <- ets(residuals_reg_v)
+forecast_res_ets_v <- forecast(fit_res_ets_v, h = length(train_testv$y_test))
+mse_reg_ets <- mse(forecast_res_ets_v$mean, train_testv$y_test)
+aic_reg_ets <- AIC(fit_res_ets_v)
+results <- rbind(results, data.frame(Model = "Regression + ETS", MSE = mse_reg_ets, AIC = aic_reg_ets))
+
+# Print the results
+print(results)
 
 
 ## 4.4 GAM (Generalized Additive Model) ----
@@ -430,6 +462,8 @@ plot_actual_vs_forecast(
 
 ## 4.5 KNN ----
 
+### KNN Baccala Mantecato ----
+
 # Normalize a function for the data
 normalize <- function(x) (x - min(x)) / (max(x) - min(x))
 
@@ -456,57 +490,66 @@ validation_indices <- setdiff(1:nrow(trainm_preprocessed), train_indices)
 
 train_split <- trainm_preprocessed[train_indices, ]
 validation_split <- trainm_preprocessed[validation_indices, , drop = FALSE]
-# Step 3: Tune k using validation data (including even k values)
+
+# Step 3: Tune k using validation data
 k_values <- 1:20 # Include k from 1 to 20
 
-
 results <- data.frame(k = k_values, Validation_MSE = numeric(length(k_values)))
-results_test <- data.frame(k = k_values, Test_MSE = numeric(length(k_values)))
+results_train <- data.frame(k = k_values, Train_MSE = numeric(length(k_values)))
 
-# Progress tracker
-cat("Tuning KNN model with k-values:", k_values, "\n")
-
+# Loop through k-values
 for (k in k_values) {
-  # Train KNN model on validation set
+  # Train KNN model on training data
   knn_model <- kknn(
     formula = Baccala_Mantecato ~ .,
     train = train_split,
-    test = validation_split,
+    test = train_split, # Evaluate on train set for train MSE
+    k = k
+  )
+  
+  # Predict on training set
+  preds_train <- predict(knn_model)
+  actual_train <- train_split$Baccala_Mantecato
+  
+  # Compute Train MSE
+  mse_train <- mean((actual_train - preds_train)^2)
+  results_train[results_train$k == k, "Train_MSE"] <- mse_train
+  
+  # Train KNN model on validation set
+  knn_model_val <- kknn(
+    formula = Baccala_Mantecato ~ .,
+    train = train_split,
+    test = validation_split, # Evaluate on validation set for validation MSE
     k = k
   )
   
   # Predict on validation set
-  preds_validation <- predict(knn_model)
+  preds_validation <- predict(knn_model_val)
   actual_validation <- validation_split$Baccala_Mantecato
   
-  # Compute validation MSE
+  # Compute Validation MSE
   mse_validation <- mean((actual_validation - preds_validation)^2)
   results[results$k == k, "Validation_MSE"] <- mse_validation
-  
-  # Predict on test set
-  preds_test <- predict(knn_model, newdata = testm_preprocessed)
-  actual_test <- testm_preprocessed$Baccala_Mantecato
-  
-  # Compute test MSE
-  mse_test <- mean((actual_test - preds_test)^2)
-  mae_test <- mean(abs(actual_test - preds_test))
-  results_test[results_test$k == k, "Test_MSE"] <- mse_test
-  
-  # Print summary for current k
-  cat(sprintf("k = %d | Validation MSE: %.5f | Test MSE: %.5f | Test MAE: %.5f\n", 
-              k, mse_validation, mse_test, mae_test))
 }
 
-# Summary of Best Results
-best_k_validation <- results$k[which.min(results$Validation_MSE)]
-best_k_test <- results_test$k[which.min(results_test$Test_MSE)]
-cat(sprintf("\nBest k (Validation): %d with MSE: %.5f\n", best_k_validation, min(results$Validation_MSE)))
-cat(sprintf("Best k (Test): %d with MSE: %.5f\n", best_k_test, min(results_test$Test_MSE)))
+# Combine Train and Validation Results for Plotting
+results_combined <- merge(results, results_train, by = "k")
 
-# Find the best k
-best_k <- results$k[which.min(results$Validation_MSE)]
-cat("Best k:", best_k, "\n")
-# Step 4: Train final KNN model with the best k on full training set
+# Plot Train vs Validation MSE
+ggplot(results_combined, aes(x = k)) +
+  geom_line(aes(y = Train_MSE, color = "Train MSE"), size = 1) +
+  geom_line(aes(y = Validation_MSE, color = "Validation MSE"), size = 1) +
+  labs(title = "Train vs Validation MSE for KNN (Baccala Mantecato)",
+       x = "k (Number of Neighbors)",
+       y = "Mean Squared Error",
+       color = "Legend") +
+  theme_minimal()
+
+# Select the best k based on validation MSE
+best_k <- 5
+cat(sprintf("Selected K: %d\n", best_k))
+
+# Final Evaluation on Test Set with Best k
 knn_final <- kknn(
   formula = Baccala_Mantecato ~ .,
   train = trainm_preprocessed,
@@ -514,46 +557,123 @@ knn_final <- kknn(
   k = best_k
 )
 
-# Step 5: Predict and evaluate on the test set
-predictions <- fitted(knn_final)
+# Predictions on Test Set
+predictions <- predict(knn_final)
 actual <- testm_preprocessed$Baccala_Mantecato
 
-mse_test <- mean((actual - predictions)^2)
+# Test MSE and MAE
+mse_test <- mse(actual, predictions)
 mae_test <- mean(abs(actual - predictions))
+mse_validation <- results[results$k == best_k, "Validation_MSE"]
 
-cat("Test MSE:", mse_test, "\n")
-cat("Test MAE:", mae_test, "\n")
+cat(sprintf("Test MSE: %.5f\n", mse_test))
+cat(sprintf("Test MAE: %.5f\n", mae_test))
+cat(sprintf("Validation MSE: %.5f\n", mse_validation))
 
-# Step 6: Plot actual vs predicted
-plot(actual, predictions, main = "Actual vs Predicted (KNN)",
+# Plot Actual vs Predicted
+plot(actual, predictions, main = "Actual vs Predicted (KNN for Baccala Mantecato)",
      xlab = "Actual", ylab = "Predicted", pch = 19, col = "blue")
 abline(0, 1, col = "red", lwd = 2)
 
-# BEST K =14 with Test MSE: 0.08237638, Test MAE: 0.2608387 and Validation MSE: 0.01267
+### KNN Baccala Vicentina ----
+# Step 1: Preprocessing the Data
+normalize <- function(x) (x - min(x)) / (max(x) - min(x))
 
-# Con K = 2
+# Normalize the features
+trainv_normalized <- trainv %>%
+  mutate(across(where(is.numeric), normalize))
+
+testv_normalized <- testv %>%
+  mutate(across(where(is.numeric), normalize))
+
+# Preprocessing: Remove the Date column and encode categorical variables
+trainv_preprocessed <- trainv_normalized %>%
+  select(-Date) %>%
+  mutate(Month = as.numeric(Month), Year = as.numeric(as.character(Year)))
+
+testv_preprocessed <- testv_normalized %>%
+  select(-Date) %>%
+  mutate(Month = as.numeric(Month), Year = as.numeric(as.character(Year)))
+
+# Step 2: Split Training Data into Train and Validation Sets
+set.seed(123)
+train_indices <- sample(1:nrow(trainv_preprocessed), size = 0.8 * nrow(trainv_preprocessed))
+validation_indices <- setdiff(1:nrow(trainv_preprocessed), train_indices)
+
+train_split <- trainv_preprocessed[train_indices, ]
+validation_split <- trainv_preprocessed[validation_indices, ]
+
+# Step 3: Tune k using Validation Data
+k_values <- 1:20
+# Initialize a data frame to store results for both training and validation MSE
+results <- data.frame(k = k_values, Validation_MSE = numeric(length(k_values)), Train_MSE = numeric(length(k_values)), stringsAsFactors = FALSE)
+
+for (k in k_values) {
+  # Train KNN model on training data
+  knn_model <- kknn(
+    formula = Baccala_Vicentina ~ .,
+    train = train_split,
+    test = validation_split,
+    k = k
+  )
+  
+  # Predict on validation set
+  preds_validation <- predict(knn_model)
+  actual_validation <- validation_split$Baccala_Vicentina
+  
+  # Compute Validation MSE
+  mse_validation <- mean((actual_validation - preds_validation)^2)
+  results[results$k == k, "Validation_MSE"] <- mse_validation
+  
+  # Predict on training set for the same k
+  preds_train <- predict(knn_model, newdata = train_split)
+  actual_train <- train_split$Baccala_Vicentina
+  
+  # Compute Training MSE
+  mse_train <- mean((actual_train - preds_train)^2)
+  results[results$k == k, "Train_MSE"] <- mse_train
+}
+
+# Plot Train and Validation MSE
+ggplot(results, aes(x = k)) +
+  geom_line(aes(y = Train_MSE, color = "Train MSE"), size = 1) +
+  geom_line(aes(y = Validation_MSE, color = "Validation MSE"), size = 1) +
+  labs(
+    title = "Train vs Validation MSE for KNN (Baccalà Vicentina)",
+    x = "k (Number of Neighbors)",
+    y = "Mean Squared Error",
+    color = "Legend"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+# Find the Best k
+best_k <- 5
+
+# Step 4: Train Final Model with Best k
 knn_final <- kknn(
-  formula = Baccala_Mantecato ~ .,
-  train = trainm_preprocessed,
-  test = testm_preprocessed,
-  k = 2
+  formula = Baccala_Vicentina ~ .,
+  train = trainv_preprocessed,
+  test = testv_preprocessed,
+  k = best_k
 )
 
-# Step 5: Predict and evaluate on the test set
-predictions <- fitted(knn_final)
-actual <- testm_preprocessed$Baccala_Mantecato
+# Step 5: Evaluate Final Model
+predictions <- predict(knn_final)
+actual <- testv_preprocessed$Baccala_Vicentina
 
-mse_test <- mean((actual - predictions)^2)
+mse_test <- mse(actual, predictions)
 mae_test <- mean(abs(actual - predictions))
+mse_validation <- results[results$k == best_k, "Validation_MSE"]
 
-cat("Test MSE:", mse_test, "\n")
-cat("Test MAE:", mae_test, "\n")
+cat(sprintf("Test MSE: %.5f\n", mse_test))
+cat(sprintf("Test MAE: %.5f\n", mae_test))
+cat(sprintf("Validation MSE: %.5f\n", mse_validation))
 
-# Step 6: Plot actual vs predicted
-plot(actual, predictions, main = "Actual vs Predicted (KNN)",
+# Optional: Plot Actual vs Predicted
+plot(actual, predictions, main = "Actual vs Predicted (KNN for Baccalà Vicentina)",
      xlab = "Actual", ylab = "Predicted", pch = 19, col = "blue")
 abline(0, 1, col = "red", lwd = 2)
-
 
 
 
