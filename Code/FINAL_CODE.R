@@ -498,6 +498,138 @@ ggplot() +
 ```
 
 
+
+### Prophet Model
+
+#### Baccala Mantecato
+We start by creating the dataset to give to the function prophet()
+
+```{r}
+library(prophet)
+
+proph_md <- data.frame(
+  ds = train[,"Date"],
+  y = train[,"Baccala_Mantecato"]
+)
+colnames(proph_md) <- c("ds", "y")
+proph_md$cap <- max(proph_md$y) * 1.1
+str(proph_md)
+```
+
+```{r message=FALSE, warning=FALSE}
+proph_logistic=prophet(proph_md,  growth="logistic", n.changepoints=5, 
+           yearly.seasonality=TRUE, 
+           seasonality.mode='multiplicative')
+
+proph_m=prophet(proph_md,  growth="linear", n.changepoints=5, 
+           yearly.seasonality=TRUE, 
+           seasonality.mode='multiplicative')
+
+future_logistic <- make_future_dataframe(proph_logistic, periods = 10, freq = "month", include_history = T)
+future_logistic$cap <- max(proph_md$y) * 1.1
+forecast_future_logistic <- predict(proph_logistic, future_logistic)
+test_logistic <- tail(forecast_future_logistic, 10)
+
+mean((test$Baccala_Mantecato - test_logistic$yhat)^2)
+
+future <- make_future_dataframe(proph_m, periods = 10, freq = "month", include_history = T)
+future$cap <- max(proph_md$y) * 1.1
+forecast_future <- predict(proph_m, future_logistic)
+test_m <- tail(forecast_future, 10)
+
+mse_test_prm <- mean((test$Baccala_Mantecato - test_m$yhat)^2)
+mse_test_prm
+```
+
+
+
+```{r}
+forecast_future$y_true <- data$Baccala_Mantecato
+forecast_future <- forecast_future[,c("yhat", "ds", "y_true")]
+ggplot(forecast_future, aes(x =ds)) +
+  geom_line(aes(y = y_true, color = "Actual")) +  # Valori reali
+  geom_line(aes(y = yhat, color = "Predicted")) +  # Valori previsti
+  labs(
+    title = "Actual vs Predicted (Prophet)",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  theme_minimal()
+```
+We observed the same staff of other models, the mse value (we will perfrom a final comparison between all the models) is high and looking at the plot, we are not able to fit well the function under the data.
+
+```{r}
+res_proph <- train$Baccala_Mantecato - head(forecast_future$yhat, 38)
+mse_train_prm <- mean(res_proph^2)
+checkresiduals(res_proph)
+```
+
+#### Baccala Vicentina
+
+```{r}
+library(prophet)
+
+proph_vd <- data.frame(
+  ds = train[,"Date"],
+  y = train[,"Baccala_Vicentina"]
+)
+colnames(proph_vd) <- c("ds", "y")
+proph_vd$cap <- max(proph_vd$y) * 1.1
+str(proph_vd)
+```
+
+```{r message=FALSE, warning=FALSE}
+proph_logistic=prophet(proph_vd,  growth="logistic", n.changepoints=5, 
+           yearly.seasonality=TRUE, 
+           seasonality.mode='multiplicative')
+
+proph_v=prophet(proph_vd,  growth="linear", n.changepoints=5, 
+           yearly.seasonality=TRUE, 
+           seasonality.mode='multiplicative')
+
+future_logistic <- make_future_dataframe(proph_logistic, periods = 10, freq = "month", include_history = T)
+future_logistic$cap <- max(proph_vd$y) * 1.1
+forecast_future_logistic <- predict(proph_logistic, future_logistic)
+test_logistic <- tail(forecast_future_logistic, 10)
+
+mean((test$Baccala_Vicentina - test_logistic$yhat)^2)
+
+future <- make_future_dataframe(proph_v, periods = 10, freq = "month", include_history = T)
+future$cap <- max(proph_vd$y) * 1.1
+forecast_future <- predict(proph_v, future_logistic)
+test_v <- tail(forecast_future, 10)
+
+mse_test_prv <- mean((test$Baccala_Vicentina - test_v$yhat)^2)
+mse_test_prv
+```
+
+
+
+```{r}
+forecast_future$y_true <- data$Baccala_Vicentina
+forecast_future <- forecast_future[,c("yhat", "ds", "y_true")]
+ggplot(forecast_future, aes(x =ds)) +
+  geom_line(aes(y = y_true, color = "Actual")) +  # Valori reali
+  geom_line(aes(y = yhat, color = "Predicted")) +  # Valori previsti
+  labs(
+    title = "Actual vs Predicted (Prophet)",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+res_proph <- train$Baccala_Vicentina - head(forecast_future$yhat, 38)
+mse_train_prv <- mean(res_proph^2)
+checkresiduals(res_proph)
+```
+
+
+
+
 ### GAM Model ----
 
 ```{r}
@@ -508,7 +640,7 @@ summary(gam_vicentina)
 ```
 
 
-## ARMAX Model ----
+### ARMAX Model ----
 
 ```{r}
 armax1 <- Arima(train$Baccala_Mantecato, xreg= train$fish_cons, seasonal=list(order=c(0,1,0), period=12), order=c(0,1,1))
@@ -528,9 +660,9 @@ summary(armax2)
 ```
 
 
-## Exponential Smoothing Model ----
+### Exponential Smoothing Model ----
 
-### ETS Baccala Mantecato ----
+#### ETS Baccala Mantecato ----
 
 ```{r}
 # Initialize a data frame to store the results
@@ -590,7 +722,7 @@ Conclusion:
   Despite the low AIC of the Regression + ETS model, its high MSE makes it unsuitable for practical use.
 
 
-### ETS Baccala Vicentina ----
+#### ETS Baccala Vicentina ----
 
 ```{r}
 results <- data.frame(
@@ -648,7 +780,7 @@ Conclusion:
   The ETS model offers a strong balance between accuracy and complexity, making it a practical choice.
   The Regression + ETS model is the simplest but least accurate, limiting its practical use.
 
-## KNN ----
+### KNN ----
 
 ```{r}
 ### KNN Baccala Mantecato ----
@@ -866,7 +998,7 @@ plot(actual, predictions, main = "Actual vs Predicted (KNN for Baccalà Vicentin
      xlab = "Actual", ylab = "Predicted", pch = 19, col = "blue")
 abline(0, 1, col = "red", lwd = 2)
 ```
-### Analysis of KNN for Baccalà Mantecato and Baccalà Vicentina
+#### Analysis of KNN for Baccalà Mantecato and Baccalà Vicentina
 
 #### KNN for **Baccalà Mantecato**:
 1. **MSE and Overfitting/Underfitting:**
