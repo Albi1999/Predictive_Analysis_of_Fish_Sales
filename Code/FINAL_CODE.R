@@ -57,6 +57,7 @@ library(mgcv)
 
 ```{r SETWD, warning=FALSE}
 base_path <- "D:/Projects_GitHub/BEFD_Project/" # Set base path
+source(file.path(base_path, "Code/Functions_Utilies.R"))
 ```
 
 ## Data Loading and Preprocessing ----
@@ -125,6 +126,7 @@ ggplot(data, aes(x = Date)) +
        y = "Quantity") +
   theme_minimal()
 ```
+
 The sales quantities of Baccala Mantecato and Baccala Vicentina show significant differences, with Baccala Mantecato consistently having a much higher volume of sales throughout all periods observed. Additionally, Baccala Mantecato exhibits a much wider range of values, indicating greater variability in sales. In contrast, Baccala Vicentina appears more stable, with sales peaks typically occurring towards the end of the year. A similar trend is also seen for Baccala Mantecato, which experiences an uptick in sales during the final months of each year.
 
 Next, we plot the time series for both products grouped by year.
@@ -214,8 +216,9 @@ ggplot(data, aes(x = trend, y = Baccala_Vicentina, color = Type)) +
 
 ## Modelling Phase
 
-### Linear Regression Model ----
+### Linear Regression Model
 
+#### Baccala Mantecato
 We start by estimating a simple linear regression model with all the possible variables
 ```{r}
 lr_m <- lm(Baccala_Mantecato ~ trend + Month + fish_cons, data = train)
@@ -251,7 +254,42 @@ cat("Full model:\n")
 cat("  AIC:", AIC(lr_m), "\n")
 cat("  Adjusted R²:", summary(lr_m)$adj.r.squared, "\n")
 ```
-From the results above we clearly see that the best model fit belong to the full model with all predictors: trend, monthly seasonality and fish consumption.
+As we can expect by the summary of the full model, from the AIC and Adjusted R² results we clearly see that the best model fit belong to the full model with all predictors: trend, monthly seasonality and fish consumption.
+
+Finally we will analyze the residuals.
+```{r}
+resid_lr <- residuals(lr_m)
+plot(resid_lr)
+```
+
+```{r}
+dwtest(lr_m)
+```
+
+When we analyze the residuals of the linear regression model, as shown in the plot below, we observe no particular patterns. The residuals appear to be randomly scattered, indicating that the model has appropriately captured the underlying trends in the data. This suggests that the assumptions of linearity, constant variance, and independence are reasonably satisfied, and the model's fit is adequate for forecasting purposes. 
+We also perform the Durbin-Watson test, that is used to check for autocorrelation in the residuals of a regression model.
+Since the p-value is smaller than the significance level (0.05), we don't reject the null hypothesis that the autocorrelation of the disturbances is 0.
+
+Finally we plot the predicted values and the actual ones. We also compute the MSE on the test set.
+
+```{r}
+ggplot() +
+  geom_line(aes(x = data$Date, y = data$Baccala_Mantecato, color = "Actual Values"), size = 1) +
+  geom_line(aes(x = train$Date, y = fitted(lr_m), color = "Train Fitted Values"), size = 1) +
+  geom_line(aes(x = test$Date, y = predict(lr_m, newdata = test), color = "Test predicted Values"), size = 1) + 
+  labs(
+    title = "Time Series: Actual vs Predicted Values",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", text = element_text(size = 12))
+mse_lrm <- mse(predict(lr_m, newdata = test), test$Baccala_Mantecato)
+print(mse_lrm)
+```
+
+#### Baccala Vicentina
 
 The same analysis is conducted below for the Baccala Vicentina variable.
 
@@ -266,6 +304,7 @@ This time the fish consumption seems to be not useful to imporve the model pefro
 lr_v <- update(lr_v_full, .~. - fish_cons)
 summary(lr_v)
 ```
+
 The adjusted R² increses from 0.8261 to 0.8305 suggesting that the reduced model is better than the full one. 
 Furthermore, the trend variable shows a large p-value, suggesting that it can be removed from the model without significantly affecting the results.
 
@@ -274,10 +313,12 @@ lr_v <- update(lr_v, .~. - trend)
 summary(lr_v)
 ```
 
+
 The best model for the Baccala Vicentina series is the one that includes only the monthly seasonality. This model provides the best fit, indicating that the variations in the data are primarily driven by seasonal effects, without the need for additional trend or other predictors.
 Moreover, the fitted model is statistically significant, as shown by the F-statistic of 18.21, with a p-value of 1.684e-09, confirming the model's overall significance.
 
 Below, we compare the difference in AIC and adjusted R² between the full model and the one with only the monthly seasonality.
+
 ```{r}
 cat("Model with month:\n")
 cat("  AIC:", AIC(lr_v), "\n")
@@ -287,26 +328,187 @@ cat("Full model:\n")
 cat("  AIC:", AIC(lr_v_full), "\n")
 cat("  Adjusted R²:", summary(lr_v_full)$adj.r.squared, "\n")
 ```
+
 The model with only the monthly seasonality performs better than the full model in terms of both AIC and adjusted R².
 
-Finally we will analyze the residuals because...
+Finally we will analyze the residuals.
 
 ```{r}
 resid_lr <- residuals(lr_v)
 plot(resid_lr)
 ```
 
+
 ```{r}
 dwtest(lr_v)
 ```
 
-When we analyze the residuals of the linear regression model, as shown in the plot below, we observe no particular patterns. 
-The residuals appear to be randomly scattered, indicating that the model has appropriately captured the underlying trends in the data. This suggests that the assumptions of linearity, constant variance, and independence are reasonably satisfied, and the model's fit is adequate for forecasting purposes.
 
-On the other hand we perform the Durbin-Watson test, that is used to check for autocorrelation in the residuals of a regression model.
-Since the p-value is greater than the significance level (0.05), we fail to reject the null hypothesis.
+When we analyze the residuals of the linear regression model, as shown in the plot below, we observe no particular patterns. The residuals appear to be randomly scattered, indicating that the model has appropriately captured the underlying trends in the data. This suggests that the assumptions of linearity, constant variance, and independence are reasonably satisfied, and the model's fit is adequate for forecasting purposes.
+On the other hand we perform the Durbin-Watson test, that is used to check for autocorrelation in the residuals of a regression model.mSince the p-value is greater than the significance level (0.05), we reject the null hypothesis.
 
-## ARIMA Model ----
+Finally we plot the predicted values and the actual ones. We also compute the MSE on the test set.
+
+```{r}
+ggplot() +
+  geom_line(aes(x = data$Date, y = data$Baccala_Vicentina, color = "Actual Values"), size = 1) +
+  geom_line(aes(x = train$Date, y = fitted(lr_v), color = "Train Fitted Values"), size = 1) +
+  geom_line(aes(x = test$Date, y = predict(lr_v, newdata = test), color = "Test predicted Values"), size = 1) + 
+  labs(
+    title = "Time Series: Actual vs Predicted Values",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", text = element_text(size = 12))
+mse_lrv <- mse(predict(lr_v, newdata = test), test$Baccala_Vicentina)
+print(mse_lrv)
+```
+
+
+### SARIMA Model
+
+#### Baccala Mantecato
+
+To begin, we first transform the sales data of Baccala Mantecato into a time series object:
+
+```{r message=FALSE, warning=FALSE}
+ts_m <- ts(train$Baccala_Mantecato, start = c(2021, 01), frequency = 12)
+plot.ts(ts_m)
+```
+From the plot above and the significance of the trend coefficient in the regression model discussed in the previous section, we might consider taking the first difference to observe the behavior of the ACF and PACF.
+
+```{r}
+ts_m1 <- diff(ts_m,1)
+Acf(ts_m1)
+Pacf(ts_m1)
+```
+
+
+Both the ACF and PACF plots show a sinusoidal pattern, with all values falling within the confidence bands, except for a significant spike at lag 12. 
+This suggests that a SARIMA model with a seasonal period s=12, accounting for monthly data with yearly seasonality, might be appropriate for this time series.
+
+```{r}
+ts_m_12 <- diff(ts_m, lag = 12)
+Acf(ts_m_12)
+Pacf(ts_m_12)
+```
+
+Now, we will build three SARIMA models. The first model will incorporate a non-seasonal differencing (with d=1), one autoregressive term (AR(1)), and a seasonal differencing with a period of 12 (to account for the yearly seasonality). The second model will instead include a moving average (MA(1)) term along with the differencing. The last one only incorporate the differencing.
+
+```{r}
+# SARIMA (1,1,0)(0,1,0)[12]
+sarima_model1m <- Arima(ts_m, order=c(1,1,0), seasonal=c(0,1,0))
+summary(sarima_model1m)
+
+# SARIMA (0,1,1)(0,1,0)[12]
+sarima_model2m <- Arima(ts_m, order=c(0,1,1), seasonal=c(0,1,0))
+summary(sarima_model2m)
+
+# SARIMA (0,1,0)(0,1,0)[12]
+sarima_model3m <- Arima(ts_m, order=c(0,1,0), seasonal=c(0,1,0))
+summary(sarima_model3m)
+```
+
+```{r}
+mse(test$Baccala_Mantecato, forecast(sarima_model1m, h = length(y_testm))$mean)
+mse(test$Baccala_Mantecato, forecast(sarima_model2m, h = length(y_testm))$mean)
+mse(test$Baccala_Mantecato, forecast(sarima_model3m, h = length(y_testm))$mean)
+```
+
+Based on the AIC values, the SARIMA(0,1,1)(0,1,0)[12] model is the better model. It has a lower AIC compared to the other SARIMA models. By the way, evaluating the performance on the test set, we notice that the MSE is larger for the AIC best model, while the SARIMA(0,1,0)(0,1,0)[12] perform better on the test set. We decide to continue whit the last one.
+
+```{r}
+ggplot() +
+  geom_line(aes(x = data$Date, y = data$Baccala_Mantecato, color = "Actual Values"), size = 1) +
+  geom_line(aes(x = train$Date, y = fitted(sarima_model3m), color = "Train Fitted Values (SARIMA)"), size = 1) +
+  geom_line(aes(x = test$Date, y = forecast(sarima_model3m, h = nrow(test))$mean, 
+                color = "Test Predicted Values (SARIMA)"), size = 1) +
+  labs(
+    title = "Time Series: Actual vs Predicted Values (SARIMA Model)",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", text = element_text(size = 12))
+```
+
+
+```{r}
+resid3 <- residuals(sarima_model3m)
+Acf(resid3)
+Pacf(resid3)
+```
+
+Residuals does not suggest a really good fit but, as said before, the best test performance are reached by the selected model.
+
+#### Baccala Vicentina
+
+To begin, we first transform the sales data of Baccalá Vicentina into a time series object:
+
+```{r message=FALSE, warning=FALSE}
+ts_v <- ts(train$Baccala_Vicentina, start = c(2021, 01), frequency = 12)
+plot.ts(ts_v)
+```
+
+```{r}
+Acf(ts_v)
+Pacf(ts_v)
+```
+
+From the plot above we clearly notice the presence of seasonality that is confirmed by the pacf and acf functions with a significant spike at lag 12.
+
+```{r}
+ts_v_12 <- diff(ts_v, lag = 12)
+Acf(ts_v_12)
+Pacf(ts_v_12)
+```
+
+This suggests that a SARIMA model with a seasonal period s=12, accounting for monthly data with yearly seasonality, might be appropriate for this time series.
+
+Now, we will build a SARIMA model model that incorporate only a seasonal differencing with a period of 12.
+The parameter D=2 lead us to lower AIC but a bigger mse, this is a case of overfitting.
+
+```{r}
+auto_sarima_modelv <- auto.arima(ts_v)
+summary(auto_sarima_modelv)
+
+# SARIMA(0,0,0)(0,1,0)[12]
+sarima_model2v <- Arima(ts_v, order=c(0,0,0), seasonal=c(0,1,0))
+summary(sarima_model2v)
+```
+
+```{r}
+resid2 <- residuals(sarima_model2v)
+Acf(resid2)
+Pacf(resid2)
+```
+
+The best model based on AIC is supposed to be the SARIMA(0,0,0)(0,1,0)[12].
+
+```{r}
+mse(test$Baccala_Vicentina, forecast(sarima_model2v, h = length(y_testv))$mean)
+```
+
+Note: We also tried different configurations, expecially after we saw the residuals plot but at the end, this remain the best model possible.
+
+```{r}
+ggplot() +
+  geom_line(aes(x = data$Date, y = data$Baccala_Vicentina, color = "Actual Values"), size = 1) +
+  geom_line(aes(x = train$Date, y = fitted(sarima_model2v), color = "Train Fitted Values (SARIMA)"), size = 1) +
+  geom_line(aes(x = test$Date, y = forecast(sarima_model2v, h = nrow(test))$mean, 
+                color = "Test Predicted Values (SARIMA)"), size = 1) +
+  labs(
+    title = "Time Series: Actual vs Predicted Values (SARIMA Model)",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", text = element_text(size = 12))
+```
 
 ## GAM Model ----
 
