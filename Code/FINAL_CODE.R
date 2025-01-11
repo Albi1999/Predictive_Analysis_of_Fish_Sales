@@ -663,6 +663,8 @@ Conclusion:
 ## KNN ----
 
 ```{r}
+### KNN Baccala Mantecato ----
+
 # Normalize a function for the data
 normalize <- function(x) (x - min(x)) / (max(x) - min(x))
 
@@ -681,29 +683,138 @@ trainm_preprocessed <- trainm_normalized %>%
 testm_preprocessed <- testm_normalized %>%
   select(-Date) %>%
   mutate(Month = as.numeric(Month), Year = as.numeric(as.character(Year)))
-```
 
-Split training data into train and validation sets
-```{r}
+# Step 2: Split training data into train and validation sets
 set.seed(123) # For reproducibility
 train_indices <- sample(1:nrow(trainm_preprocessed), size = 0.8 * nrow(trainm_preprocessed))
 validation_indices <- setdiff(1:nrow(trainm_preprocessed), train_indices)
 
 train_split <- trainm_preprocessed[train_indices, ]
 validation_split <- trainm_preprocessed[validation_indices, , drop = FALSE]
-```
 
-Step 3: Tune k using validation data (including even k values)
-```{r}
+# Step 3: Tune k using validation data
 k_values <- 1:20 # Include k from 1 to 20
 
 results <- data.frame(k = k_values, Validation_MSE = numeric(length(k_values)))
-results_test <- data.frame(k = k_values, Test_MSE = numeric(length(k_values)))
+results_train <- data.frame(k = k_values, Train_MSE = numeric(length(k_values)))
 
+# Loop through k-values
 for (k in k_values) {
-  # Train KNN model on validation set
+  # Train KNN model on training data
   knn_model <- kknn(
     formula = Baccala_Mantecato ~ .,
+    train = train_split,
+    test = train_split, # Evaluate on train set for train MSE
+    k = k
+  )
+  
+  # Predict on training set
+  preds_train <- predict(knn_model)
+  actual_train <- train_split$Baccala_Mantecato
+  
+  # Compute Train MSE
+  mse_train <- mean((actual_train - preds_train)^2)
+  results_train[results_train$k == k, "Train_MSE"] <- mse_train
+  
+  # Train KNN model on validation set
+  knn_model_val <- kknn(
+    formula = Baccala_Mantecato ~ .,
+    train = train_split,
+    test = validation_split, # Evaluate on validation set for validation MSE
+    k = k
+  )
+  
+  # Predict on validation set
+  preds_validation <- predict(knn_model_val)
+  actual_validation <- validation_split$Baccala_Mantecato
+  
+  # Compute Validation MSE
+  mse_validation <- mean((actual_validation - preds_validation)^2)
+  results[results$k == k, "Validation_MSE"] <- mse_validation
+}
+
+# Combine Train and Validation Results for Plotting
+results_combined <- merge(results, results_train, by = "k")
+
+# Plot Train vs Validation MSE
+ggplot(results_combined, aes(x = k)) +
+  geom_line(aes(y = Train_MSE, color = "Train MSE"), size = 1) +
+  geom_line(aes(y = Validation_MSE, color = "Validation MSE"), size = 1) +
+  labs(title = "Train vs Validation MSE for KNN (Baccala Mantecato)",
+       x = "k (Number of Neighbors)",
+       y = "Mean Squared Error",
+       color = "Legend") +
+  theme_minimal()
+
+# Select the best k based on validation MSE
+best_k <- 5
+cat(sprintf("Selected K: %d\n", best_k))
+
+# Final Evaluation on Test Set with Best k
+knn_final <- kknn(
+  formula = Baccala_Mantecato ~ .,
+  train = trainm_preprocessed,
+  test = testm_preprocessed,
+  k = best_k
+)
+
+# Predictions on Test Set
+predictions <- predict(knn_final)
+actual <- testm_preprocessed$Baccala_Mantecato
+
+# Test MSE and MAE
+mse_test <- mse(actual, predictions)
+mae_test <- mean(abs(actual - predictions))
+mse_validation <- results[results$k == best_k, "Validation_MSE"]
+
+cat(sprintf("Test MSE: %.5f\n", mse_test))
+cat(sprintf("Test MAE: %.5f\n", mae_test))
+cat(sprintf("Validation MSE: %.5f\n", mse_validation))
+
+# Plot Actual vs Predicted
+plot(actual, predictions, main = "Actual vs Predicted (KNN for Baccala Mantecato)",
+     xlab = "Actual", ylab = "Predicted", pch = 19, col = "blue")
+abline(0, 1, col = "red", lwd = 2)
+
+
+
+### KNN Baccala Vicentina ----
+# Step 1: Preprocessing the Data
+normalize <- function(x) (x - min(x)) / (max(x) - min(x))
+
+# Normalize the features
+trainv_normalized <- trainv %>%
+  mutate(across(where(is.numeric), normalize))
+
+testv_normalized <- testv %>%
+  mutate(across(where(is.numeric), normalize))
+
+# Preprocessing: Remove the Date column and encode categorical variables
+trainv_preprocessed <- trainv_normalized %>%
+  select(-Date) %>%
+  mutate(Month = as.numeric(Month), Year = as.numeric(as.character(Year)))
+
+testv_preprocessed <- testv_normalized %>%
+  select(-Date) %>%
+  mutate(Month = as.numeric(Month), Year = as.numeric(as.character(Year)))
+
+# Step 2: Split Training Data into Train and Validation Sets
+set.seed(123)
+train_indices <- sample(1:nrow(trainv_preprocessed), size = 0.8 * nrow(trainv_preprocessed))
+validation_indices <- setdiff(1:nrow(trainv_preprocessed), train_indices)
+
+train_split <- trainv_preprocessed[train_indices, ]
+validation_split <- trainv_preprocessed[validation_indices, ]
+
+# Step 3: Tune k using Validation Data
+k_values <- 1:20
+# Initialize a data frame to store results for both training and validation MSE
+results <- data.frame(k = k_values, Validation_MSE = numeric(length(k_values)), Train_MSE = numeric(length(k_values)), stringsAsFactors = FALSE)
+
+for (k in k_values) {
+  # Train KNN model on training data
+  knn_model <- kknn(
+    formula = Baccala_Vicentina ~ .,
     train = train_split,
     test = validation_split,
     k = k
@@ -711,95 +822,98 @@ for (k in k_values) {
   
   # Predict on validation set
   preds_validation <- predict(knn_model)
-  actual_validation <- validation_split$Baccala_Mantecato
+  actual_validation <- validation_split$Baccala_Vicentina
   
-  # Compute validation MSE
+  # Compute Validation MSE
   mse_validation <- mean((actual_validation - preds_validation)^2)
   results[results$k == k, "Validation_MSE"] <- mse_validation
   
-  # Predict on test set
-  preds_test <- predict(knn_model, newdata = testm_preprocessed)
-  actual_test <- testm_preprocessed$Baccala_Mantecato
+  # Predict on training set for the same k
+  preds_train <- predict(knn_model, newdata = train_split)
+  actual_train <- train_split$Baccala_Vicentina
   
-  # Compute test MSE
-  mse_test <- mean((actual_test - preds_test)^2)
-  mae_test <- mean(abs(actual_test - preds_test))
-  results_test[results_test$k == k, "Test_MSE"] <- mse_test
-  
-  # Print summary for current k
-  cat(sprintf("k = %d | Validation MSE: %.5f | Test MSE: %.5f | Test MAE: %.5f\n", 
-              k, mse_validation, mse_test, mae_test))
+  # Compute Training MSE
+  mse_train <- mean((actual_train - preds_train)^2)
+  results[results$k == k, "Train_MSE"] <- mse_train
 }
 
-# Summary of Best Results
-best_k_validation <- results$k[which.min(results$Validation_MSE)]
-best_k_test <- results_test$k[which.min(results_test$Test_MSE)]
-cat(sprintf("\nBest k (Validation): %d with MSE: %.5f\n", best_k_validation, min(results$Validation_MSE)))
-cat(sprintf("Best k (Test): %d with MSE: %.5f\n", best_k_test, min(results_test$Test_MSE)))
+# Plot Train and Validation MSE
+ggplot(results, aes(x = k)) +
+  geom_line(aes(y = Train_MSE, color = "Train MSE"), size = 1) +
+  geom_line(aes(y = Validation_MSE, color = "Validation MSE"), size = 1) +
+  labs(
+    title = "Train vs Validation MSE for KNN (Baccalà Vicentina)",
+    x = "k (Number of Neighbors)",
+    y = "Mean Squared Error",
+    color = "Legend"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
 
-# Find the best k
-best_k <- results$k[which.min(results$Validation_MSE)]
-cat("Best k:", best_k, "\n")
-```
-# KNN con K = 14 ----
-Step 4: Train final KNN model with the best k on full training set
+# Find the Best k
+best_k <- 5
 
-```{r}
+# Step 4: Train Final Model with Best k
 knn_final <- kknn(
-  formula = Baccala_Mantecato ~ .,
-  train = trainm_preprocessed,
-  test = testm_preprocessed,
+  formula = Baccala_Vicentina ~ .,
+  train = trainv_preprocessed,
+  test = testv_preprocessed,
   k = best_k
 )
-```
 
-Step 5: Predict and evaluate on the test set
-```{r}
-predictions <- fitted(knn_final)
-actual <- testm_preprocessed$Baccala_Mantecato
+# Step 5: Evaluate Final Model
+predictions <- predict(knn_final)
+actual <- testv_preprocessed$Baccala_Vicentina
 
-mse_test <- mean((actual - predictions)^2)
+mse_test <- mse(actual, predictions)
 mae_test <- mean(abs(actual - predictions))
+mse_validation <- results[results$k == best_k, "Validation_MSE"]
 
-cat("Test MSE:", mse_test, "\n")
-cat("Test MAE:", mae_test, "\n")
-```
-K =14 with Test MSE: 0.08237638, Test MAE: 0.2608387 and Validation MSE: 0.01267
+cat(sprintf("Test MSE: %.5f\n", mse_test))
+cat(sprintf("Test MAE: %.5f\n", mae_test))
+cat(sprintf("Validation MSE: %.5f\n", mse_validation))
 
-## KNN con K = 2 ----
-Con K = 2
-```{r}
-knn_final <- kknn(
-  formula = Baccala_Mantecato ~ .,
-  train = trainm_preprocessed,
-  test = testm_preprocessed,
-  k = 2
-)
-```
-Step 5: Predict and evaluate on the test set
-
-```{r}
-predictions <- fitted(knn_final)
-actual <- testm_preprocessed$Baccala_Mantecato
-
-mse_test <- mean((actual - predictions)^2)
-mae_test <- mean(abs(actual - predictions))
-
-cat("Test MSE:", mse_test, "\n")
-cat("Test MAE:", mae_test, "\n")
-```
-Step 6: Plot actual vs predicted
-```{r}
-plot(actual, predictions, main = "Actual vs Predicted (KNN)",
+# Optional: Plot Actual vs Predicted
+plot(actual, predictions, main = "Actual vs Predicted (KNN for Baccalà Vicentina)",
      xlab = "Actual", ylab = "Predicted", pch = 19, col = "blue")
 abline(0, 1, col = "red", lwd = 2)
 ```
-K = 2 with Test MSE: 0.004291991, Test MAE: 0.05627241 and Validation MSE: 0.02047
+### Analysis of KNN for Baccalà Mantecato and Baccalà Vicentina
 
+#### KNN for **Baccalà Mantecato**:
+1. **MSE and Overfitting/Underfitting:**
+  - The training curve showed a steadily increasing MSE as `k` increased, while the validation MSE initially decreased and then stabilized after `k = 5`.
+- The selected `k = 5` balances the tradeoff between overfitting (low `k`) and underfitting (high `k`). It minimizes validation MSE (0.01459) without excessively high test MSE (0.02829).
 
+2. **Actual vs Predicted Plot:**
+  - The scatter plot of actual vs predicted values for `k = 5` shows points reasonably close to the diagonal, indicating good alignment between predictions and actual values.
+- There are slight deviations for extreme values, suggesting that KNN struggles to capture high variance in the data.
 
+3. **Overall:**
+  - `k = 5` is a reasonable choice based on its performance metrics and balance between underfitting/overfitting.
+- The relatively low Test MAE (0.15652) indicates a good predictive capability for practical applications.
 
+---
+  
+#### KNN for **Baccalà Vicentina**:
+  1. **MSE and Overfitting/Underfitting:**
+  - Similar to the mantecato model, the training MSE curve increases as `k` increases, while validation MSE initially decreases and stabilizes.
+- The selected `k = 5` strikes a good balance between training and validation performance, achieving a validation MSE of 0.02942 and a test MSE of 0.05786.
 
+2. **Actual vs Predicted Plot:**
+  - The plot for `k = 5` demonstrates points scattered close to the diagonal. The alignment isn't as tight as for the mantecato model, indicating slightly less accurate predictions, particularly for extreme values.
+
+3. **Overall:**
+   - `k = 5` provides a good tradeoff between model complexity and accuracy. The Test MAE of 0.20753 is reasonable, given the noisier nature of the Vicentina data.
+
+---
+
+### Summary:
+For both models:
+- **Baccalà Mantecato:** `k = 5` achieves the best balance, with low validation and test errors and good alignment between actual and predicted values.
+- **Baccalà Vicentina:** `k = 5` is also the optimal choice, though the model shows slightly higher errors than mantecato due to the nature of the data.
+
+The chosen `k` values minimize overfitting while maintaining acceptable predictive accuracy for practical use.
 
 
 
