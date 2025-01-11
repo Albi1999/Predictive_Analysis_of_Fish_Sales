@@ -25,6 +25,7 @@ mse = function(pred, real){
 base_path <- "D:/Projects_GitHub/BEFD_Project/" # Set base path
 ```
 
+
 ## Data Loading and Preprocessing
 
 ```{r DATA LOAD, message=FALSE, warning=FALSE}
@@ -76,6 +77,7 @@ Finally we aggregate the salmon monthly consumption time series to our data.
 data$fish_cons <- fish_cons$kg_std[,1]
 head(data,3)
 ```
+
 
 ## Explanatory Analysis
 
@@ -141,6 +143,7 @@ We now that autocorrelation occurs when the effect of a avriable is spread over 
 However, within the bands, the autocorrelations exhibit a sinusoidal pattern, suggesting the presence of seasonality in the data, where periodic fluctuations occur over time. The peak at lag 12 further supports the idea of a cyclical effect.
 We will analyze the residuals of future models to confirm or disprove the presence of this seasonality.
 
+
 ## Train-Test Split
 
 In this section, we perform a train-test split to prepare the data for model training and evaluation. We divide the time series data for both Baccala Mantecato and Baccala Vicentina into training and testing sets, with 90% of the data allocated for training and the remaining 10% for testing.
@@ -180,6 +183,7 @@ ggplot(data, aes(x = trend, y = Baccala_Vicentina, color = Type)) +
   theme_minimal() +
   theme(legend.title = element_blank())
 ```
+
 
 ## Modelling Phase
 
@@ -340,6 +344,7 @@ print(mse_test_lrv)
 
 
 
+
 ### ARIMA Model
 
 #### Baccala Mantecato
@@ -488,6 +493,7 @@ ggplot() +
   theme(legend.position = "bottom", text = element_text(size = 12))
 ```
 
+
 ### Prophet Model
 
 #### Baccala Mantecato
@@ -615,6 +621,7 @@ res_proph <- train$Baccala_Vicentina - head(forecast_future$yhat, 38)
 mse_train_prv <- mean(res_proph^2)
 checkresiduals(res_proph)
 ```
+
 
 
 

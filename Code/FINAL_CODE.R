@@ -109,7 +109,9 @@ ggplot(data, aes(x = Date)) +
   labs(title = "Monthly Time Series of Baccala Mantecato and Baccala Vicentina",
        x = "Date",
        y = "Quantity") +
-  theme_minimal()
+  scale_color_manual(values = c("Baccala Mantecato" = "#FF7F7F", "Baccala Vicentina" = "#6BC3FF")) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
 ```
 
 The sales quantities of Baccala Mantecato and Baccala Vicentina show significant differences, with Baccala Mantecato consistently having a much higher volume of sales throughout all periods observed. Additionally, Baccala Mantecato exhibits a much wider range of values, indicating greater variability in sales. In contrast, Baccala Vicentina appears more stable, with sales peaks typically occurring towards the end of the year. A similar trend is also seen for Baccala Mantecato, which experiences an uptick in sales during the final months of each year.
@@ -150,8 +152,8 @@ if (end(yv)[1] != 2024 || end(yv)[2] != 12) {
   print("Error in ts yv")
 }
 
-acf(data$Baccala_Mantecato, main = "ACF of Baccala Mantecato", col = "blue", lwd = 2)
-acf(data$Baccala_Vicentina, main = "ACF of Baccala Vicentina", col = "red", lwd = 2)
+Acf(data$Baccala_Mantecato, main = "ACF of Baccala Mantecato", col = "#FF7F7F", lwd = 2)
+Acf(data$Baccala_Vicentina, main = "ACF of Baccala Vicentina", col = "#6BC3FF", lwd = 2)
 ```
 
 We now that autocorrelation occurs when the effect of a avriable is spread over time, in these cases, most of the autocorrelations fall within the confidence bands, indicating that the data does not show significant correlation for most lags. 
@@ -181,22 +183,23 @@ y_testv <- test[["Baccala_Vicentina"]]
 ```{r TRAIN-TEST PLOT}
 Type = c(rep("Train", dim(train)[1]), rep("Test", dim(test)[1]))
 ggplot(data, aes(x = trend, y = Baccala_Mantecato, color = Type)) +
-  geom_line() +
-  scale_color_manual(values = c("red", "blue")) +
+  geom_line(size = 1) +
+  scale_color_manual(values = c("#FF7F7F", "#6BC3FF")) +
   labs(title = "Train and Test Data for Baccala Mantecato",
        x = "Time",
        y = "Quantity sold of Baccala Mantecato") +
   theme_minimal() +
-  theme(legend.title = element_blank())
+  theme(legend.position = "bottom")
+  
 
 ggplot(data, aes(x = trend, y = Baccala_Vicentina, color = Type)) +
-  geom_line() +
-  scale_color_manual(values = c("red", "blue")) +
-  labs(title = "Train and Test Data for Baccala Vicentinao",
+  geom_line(size = 1) +
+  scale_color_manual(values = c("#FF7F7F", "#6BC3FF")) +
+  labs(title = "Train and Test Data for Baccala Vicentina",
        x = "Time",
        y = "Quantity sold of Baccala Vicentina") +
   theme_minimal() +
-  theme(legend.title = element_blank())
+  theme(legend.position = "bottom")
 ```
 
 ## Modelling Phase
@@ -269,7 +272,7 @@ ggplot() +
     color = "Legend"
   ) +
   theme_minimal() +
-  theme(legend.position = "bottom", text = element_text(size = 12))
+  theme(legend.position = "bottom")
 mse_lrm <- mse(predict(lr_m, newdata = test), test$Baccala_Mantecato)
 print(mse_lrm)
 ```
@@ -350,7 +353,6 @@ ggplot() +
 mse_lrv <- mse(predict(lr_v, newdata = test), test$Baccala_Vicentina)
 print(mse_lrv)
 ```
-
 
 ### SARIMA Model
 
@@ -780,6 +782,7 @@ Conclusion:
   The ETS model offers a strong balance between accuracy and complexity, making it a practical choice.
   The Regression + ETS model is the simplest but least accurate, limiting its practical use.
 
+
 ### KNN ----
 
 ```{r}
@@ -1027,6 +1030,7 @@ abline(0, 1, col = "red", lwd = 2)
    - `k = 5` provides a good tradeoff between model complexity and accuracy. The Test MAE of 0.20753 is reasonable, given the noisier nature of the Vicentina data.
 
 ---
+
 
 ### Summary:
 For both models:
