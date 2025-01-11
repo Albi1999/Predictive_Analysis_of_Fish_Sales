@@ -271,7 +271,7 @@ ggplot() +
                      labels = c("Actual Values", "Fitted Values (Train)", "Predicted Values (Test)")) +
   
   labs(
-    title = "Actual vs Fitted and Predicted Values for Baccalà Mantecato",
+    title = "Actual vs Fitted and Predicted Values for Baccala Mantecato (Linear Regression Model)",
     x = "Date",
     y = "Value",
     color = "Legend"
@@ -352,7 +352,7 @@ ggplot() +
                                 "Predicted Values (Test)" = "#8FBC8F"),
                      labels = c("Actual Values", "Fitted Values (Train)", "Predicted Values (Test)")) +
   labs(
-    title = "Actual vs Fitted and Predicted Values for Baccalà Vicentina",
+    title = "Actual vs Fitted and Predicted Values for Baccala Vicentina (Linear Regression Model)",
     x = "Date",
     y = "Value",
     color = "Legend"
@@ -428,7 +428,7 @@ ggplot() +
                                 "Predicted Values (Test)" = "#8FBC8F"),
                      labels = c("Actual Values", "Fitted Values (Train)", "Predicted Values (Test)")) +
   labs(
-    title = "Time Series: Actual vs Predicted Values (SARIMA Model)",
+    title = "Actual vs Fitted and Predicted Values for Baccala Vicentina (SARIMA Model)",
     x = "Date",
     y = "Value",
     color = "Legend"
@@ -508,7 +508,7 @@ ggplot() +
                                 "Predicted Values (Test)" = "#8FBC8F"),
                      labels = c("Actual Values", "Fitted Values (Train)", "Predicted Values (Test)")) +
   labs(
-    title = "Actual vs Fitted and Predicted Values for Baccalà Vicentina",
+    title = "Actual vs Fitted and Predicted Values for Baccala Vicentina (SARIMA Model)",
     x = "Date",
     y = "Value",
     color = "Legend"
@@ -580,7 +580,7 @@ ggplot() +
                      labels = c("Actual Values", "Fitted Values (Train)", "Predicted Values (Test)")) +
   
   labs(
-    title = "Actual vs Fitted and Predicted Values for Baccalà Mantecato",
+    title = "Actual vs Fitted and Predicted Values for Baccala Mantecato (Prophet Model)",
     x = "Date",
     y = "Value",
     color = "Legend"
@@ -654,7 +654,7 @@ ggplot() +
                      labels = c("Actual Values", "Fitted Values (Train)", "Predicted Values (Test)")) +
   
   labs(
-    title = "Actual vs Fitted and Predicted Values for Baccalà Vicentina",
+    title = "Actual vs Fitted and Predicted Values for Baccala Vicentina (Prophet Model)",
     x = "Date",
     y = "Value",
     color = "Legend"
