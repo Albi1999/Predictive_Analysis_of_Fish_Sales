@@ -1003,6 +1003,9 @@ Some underestimations occur during sharp spikes in the data, but overall, the mo
 
 # Results
 
+Now we compare the results of the models on the training and test sets.
+To do so, we create a table with the MSE values for each model on the training and test sets and plot the results.
+
 ```{r results}
 name_models <- c("Linear Regression", "SARIMA", "Prophet", "SARIMAX", "Exponential Smoothing")
 
@@ -1023,23 +1026,68 @@ results <- data.frame(
 )
 kable(results, caption = "Results of the models on the training and test sets")
 ```
+From the table above, we can draw the following conclusions:
 
-```{r plot_results, message=FALSE, warning=FALSE}
-plot_results(results, "MSE_Train_M")
-plot_results(results, "MSE_Test_M")
+- Linear Regression:
+    
+    Train: Best performance during training for both series, showing the lowest MSE values.
+    
+    Test: Overfits, leading to poor generalization, especially for Baccala Mantecato.
 
-plot_results(results, "MSE_Train_V")
-plot_results(results, "MSE_Test_V")
+- SARIMA:
 
+    Train: Higher MSE due to its attempt to model seasonal components.
+    
+    Test: Underperforms, particularly for Baccala Mantecato, with the highest test MSE among all models.
+
+- Prophet:
+    
+    Train: Competitive results, especially for Baccala Mantecato.
+    
+    Test: Subpar performance with higher test MSE, indicating limitations in handling non-seasonal variations.
+
+- SARIMAX:
+
+    Train: Improves over SARIMA by using external regressors.
+    
+    Test: Best model for Baccala Mantecato, reducing MSE significantly compared to SARIMA.
+
+- Exponential Smoothing:
+
+    Train: Excellent performance, particularly for Baccala Vicentina.
+    
+    Test: Best model for Baccala Vicentina, showing the lowest test MSE and stable performance.
+
+For Baccala Mantecato, SARIMAX emerges as the best model, leveraging external regressors to improve prediction accuracy. 
+For Baccala Vicentina, Exponential Smoothing with multiplicative seasonality is the top choice, demonstrating consistent and reliable performance across both training and test sets. 
+Linear regression and SARIMA fall short due to overfitting and limited flexibility, respectively.
+
+```{r results_prep, message=FALSE, warning=FALSE}
+results <- data.frame(
+  Model = name_models,
+  
+  MSE_Train_Mantecato = mse_train_m,
+  MSE_Train_Vicentina = mse_train_v,
+  
+  MSE_Test_Mantecato = mse_test_m,
+  MSE_Test_Vicentina = mse_test_v
+)
 ```
 
-
-
-
-
-
-
-
-
-
+```{r plot_results, message=FALSE, warning=FALSE}
+plot_results(results, "MSE_Train_Mantecato")
+```
+The bar chart confirms that Linear Regression and Exponential Smoothing achieve the lowest MSE values for the training phase, indicating their ability to fit the data well. SARIMA and SARIMAX models show slightly higher training errors, which may reflect their attempt to account for more complex seasonal and trend structures.
+```{r plot_results_2, message=FALSE, warning=FALSE}
+plot_results(results, "MSE_Test_Mantecato")
+```
+The test results reveal that SARIMAX and Exponential Smoothing outperform SARIMA and Prophet models for Baccala Mantecato. The stark difference between train and test MSE for Linear Regression further highlights its overfitting issue.
+```{r plot_results_3, message=FALSE, warning=FALSE}
+plot_results(results, "MSE_Train_Vicentina")
+```
+Similar trends are observed for Baccala Vicentina, with Exponential Smoothing and Linear Regression performing best during training. SARIMA and SARIMAX models have noticeably higher training MSEs. The best one is the Prophet model.
+```{r plot_results_4, message=FALSE, warning=FALSE}
+plot_results(results, "MSE_Test_Vicentina")
+```
+For Baccala Vicentina, Exponential Smoothing slightly outperforms the other models in the test phase. SARIMA and SARIMAX perform comparably, while Prophet and Linear Regression lag behind.
 
