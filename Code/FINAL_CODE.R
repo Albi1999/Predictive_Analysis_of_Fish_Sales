@@ -202,6 +202,7 @@ Then we take a closer look to the coefficents:
 Now we try removing variables to evaluate their impact on model performance using AIC and adjusted R² values.
 
 ```{r}
+#lr_m_<missing_variable>
 lr_m_month <- lm(Baccala_Mantecato ~ trend + fish_cons, data = train)
 lr_m_trend <- lm(Baccala_Mantecato ~ Month + fish_cons, data = train)
 lr_m_fish_cons <- lm(Baccala_Mantecato ~ trend + Month, data = train)
@@ -228,7 +229,8 @@ Finally we will analyze the residuals.
 ```{r}
 resid_lr <- residuals(lr_m)
 mse_train_lrm <- mean(resid_lr^2)
-checkresiduals(lr_m)
+#checkresiduals(lr_m)
+tsdisplay(resid_lr)
 ```
 
 ```{r}
@@ -309,9 +311,10 @@ The model with only the monthly seasonality performs better than the full model 
 Finally we will analyze the residuals.
 
 ```{r}
-resid_lr <- residuals(lr_v)
-mse_train_lrv <- mean(resid_lr^2)
-checkresiduals(lr_v)
+resid_lrv <- residuals(lr_v)
+mse_train_lrv <- mean(resid_lrv^2)
+#checkresiduals(lr_v)
+tsdisplay(resid_lrv)
 ```
 
 
@@ -360,8 +363,9 @@ From the plot above and the significance of the trend coefficient in the regress
 
 ```{r}
 ts_m1 <- diff(ts_m,1)
-Acf(ts_m1, main = "ACF of Baccala Mantecato with Lag 1", col = "#FF7F7F", lwd = 2)
-Pacf(ts_m1, main = "PACF of Baccala Mantecato with Lag 1", col = "#6BC3FF", lwd = 2)
+tsdisplay(diff(ts_m,1))
+#Acf(ts_m1, main = "ACF of Baccala Mantecato with Lag 1", col = "#FF7F7F", lwd = 2)
+#Pacf(ts_m1, main = "PACF of Baccala Mantecato with Lag 1", col = "#6BC3FF", lwd = 2)
 ```
 
 
@@ -370,8 +374,9 @@ This suggests that a SARIMA model with a seasonal period s=12, accounting for mo
 
 ```{r}
 ts_m_12 <- diff(ts_m, lag = 12)
-Acf(ts_m_12, main = "ACF of Baccala Mantecato with Lag 12", col = "#FF7F7F", lwd = 2)
-Pacf(ts_m_12, main = "PACF of Baccala Mantecato with Lag 12", col = "#6BC3FF", lwd = 2)
+tsdisplay(diff(ts_m, lag = 12))
+#Acf(ts_m_12, main = "ACF of Baccala Mantecato with Lag 12", col = "#FF7F7F", lwd = 2)
+#Pacf(ts_m_12, main = "PACF of Baccala Mantecato with Lag 12", col = "#6BC3FF", lwd = 2)
 ```
 
 Now, we will build three SARIMA models. The first model will incorporate a non-seasonal differencing (with d=1), one autoregressive term (AR(1)), and a seasonal differencing with a period of 12 (to account for the yearly seasonality). The second model will instead include a moving average (MA(1)) term along with the differencing. The last one only incorporate the differencing.
@@ -425,8 +430,9 @@ ggplot() +
 ```{r}
 resid3 <- residuals(sarima_model3m)
 mse_train_sarimam <- mean(resid3^2)
-Acf(resid3, main = "ACF for SARIMA Residuals of Baccala Mantecato", col = "#FF7F7F", lwd = 2)
-Pacf(resid3, main = "PACF for SARIMA Residuals of Baccala Mantecato", col = "#6BC3FF", lwd = 2)
+tsdisplay(resid3)
+#Acf(resid3, main = "ACF for SARIMA Residuals of Baccala Mantecato", col = "#FF7F7F", lwd = 2)
+#Pacf(resid3, main = "PACF for SARIMA Residuals of Baccala Mantecato", col = "#6BC3FF", lwd = 2)
 ```
 
 Residuals does not suggest a really good fit but, as said before, the best test performance are reached by the selected model.
@@ -441,6 +447,7 @@ plot.ts(ts_v)
 ```
 
 ```{r}
+tsdisplay(ts_v)
 Acf(ts_v, main = "ACF of Baccala Vicentina", col = "#FF7F7F", lwd = 2)
 Pacf(ts_v, main = "PACF of Baccala Vicentina", col = "#6BC3FF", lwd = 2)
 ```
@@ -449,6 +456,7 @@ From the plot above we clearly notice the presence of seasonality that is confir
 
 ```{r}
 ts_v_12 <- diff(ts_v, lag = 12)
+tsdisplay(ts_v_12)
 Acf(ts_v_12, main = "ACF of Baccala Vicentina with Lag 12", col = "#FF7F7F", lwd = 2)
 Pacf(ts_v_12, main = "PACF of Baccala Vicentina with Lag 12", col = "#6BC3FF", lwd = 2)
 ```
@@ -470,8 +478,9 @@ summary(sarima_model2v)
 ```{r}
 resid2 <- residuals(sarima_model2v)
 mse_train_sarimav <- mean(resid2^2)
-Acf(resid2, main = "ACF for SARIMA Residuals of Baccala Vicentina", col = "#FF7F7F", lwd = 2)
-Pacf(resid2, main = "PACF for SARIMA Residuals of Baccala Vicentina", col = "#6BC3FF", lwd = 2)
+tsdisplay(resid2)
+#Acf(resid2, main = "ACF for SARIMA Residuals of Baccala Vicentina", col = "#FF7F7F", lwd = 2)
+#Pacf(resid2, main = "PACF for SARIMA Residuals of Baccala Vicentina", col = "#6BC3FF", lwd = 2)
 ```
 
 The best model based on AIC is supposed to be the SARIMA(0,0,0)(0,1,0)[12].
@@ -481,7 +490,7 @@ mse_test_sarimav <- mse(test$Baccala_Vicentina, forecast(sarima_model2v, h = len
 mse_test_sarimav
 ```
 
-Note: We also tried different configurations, expecially after we saw the residuals plot but at the end, this remain the best model possible.
+Note: We also tried different configurations, expecially after we saw the residuals plot, where most of the values are inside the bandswith butfrom the ts plot their behaviou don't seems to be a random noise one; but at the end, this remain the best model. possible.
 
 ```{r}
 ggplot() +
@@ -580,7 +589,20 @@ We observed the same staff of other models, the mse value (we will perfrom a fin
 ```{r}
 res_proph <- train$Baccala_Mantecato - head(forecast_future$yhat, 38)
 mse_train_prm <- mean(res_proph^2)
-checkresiduals(res_proph)
+#checkresiduals(res_proph)
+tsdisplay(res_proph)
+```
+```{r}
+aar1 <- Arima(res_proph, order=c(1,0,0))# didn't help-->seasonal=list(order=c(0,1,0),period=12))
+
+res_proph1 <- train$Baccala_Mantecato - (head(forecast_future$yhat, 38) + fitted(aar1))
+mse_train_prm1 <- mean(res_proph1^2)
+mse_train_prm1
+#checkresiduals(res_proph)
+tsdisplay(res_proph1)
+
+mean((test$Baccala_Mantecato - (test_m$yhat + as.numeric(forecast(aar1, h=10)$mean)))^2)
+
 ```
 
 #### Baccala Vicentina
