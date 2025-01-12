@@ -611,205 +611,230 @@ plot(g0)
 # This analysis clearly indicates that both results suggest against the use of models that fit 
 # nonlinear relationships, such as GAMs.
 
-
 ## Exponential Smoothing Model ----
+
+# We decide to try also an exponential smoothing model, in particular we try the ETS model
+# It is a simple model that can be used to forecast time series data, using the Exponential Smoothing method.
 
 ### Baccala Mantecato ----
 
-# Initialize a data frame to store the results
-results <- data.frame(
+# First we initialize a data frame to store the results of the models that we are going to test
+results_m <- data.frame(
   Model = character(),
   MSE = numeric(),
   AIC = numeric(),
   stringsAsFactors = FALSE
 )
 
-# 1. ETS Model
-train_series <- ts(train_testm$y_train, start = c(2021, 1), frequency = 12)
-fit_ES <- ets(train_series)
-forecast_ES <- forecast(fit_ES, h = length(train_testm$y_test))
-mse_ets <- mse(forecast_ES$mean, train_testm$y_test)
-aic_ets <- AIC(fit_ES)
-results <- rbind(results, data.frame(Model = "ETS", MSE = mse_ets, AIC = aic_ets))
+# Create the time series object for training
+train_series_m <- ts(train$Baccala_Mantecato, start = c(2021, 1), frequency = 12)
 
-# 2. Additive Seasonality (Holt-Winters via ETS)
-fit_hw_add <- ets(train_series, model = "AAA")
-forecast_hw_add <- forecast(fit_hw_add, h = length(train_testm$y_test))
-mse_hw_add <- mse(forecast_hw_add$mean, train_testm$y_test)
-aic_hw_add <- AIC(fit_hw_add)
-results <- rbind(results, data.frame(Model = "Holt-Winters Additive", MSE = mse_hw_add, AIC = aic_hw_add))
+# ETS Model
+# First we try the classic ETS model
+fit_ES_m <- ets(train_series_m)
+# The ets() function fits an exponential smoothing model, automatically selecting the best configuration 
+# based on the data. 
+forecast_ES_m <- forecast(fit_ES_m, h = length(y_testm))
+mse_ets_m <- mse(forecast_ES_m$mean,  y_testm)
+aic_ets_m <- AIC(fit_ES_m)
+results_m <- rbind(results_m, data.frame(Model = "ETS", MSE = mse_ets_m, AIC = aic_ets_m))
+# We obtained a MSE of 111.7995 and an AIC of 266.4093 wich are good results.
+# So we decided to try to use the ETS model also with additive and multiplicative seasonality to 
+# see if we can improve the results obtained with the classic ETS model.
 
-# 3. Holt-Winters Multiplicative Seasonality (via ETS)
-fit_hw_mult <- ets(train_series, model = "MAM")
-forecast_hw_mult <- forecast(fit_hw_mult, h = length(train_testm$y_test))
-mse_hw_mult <- mse(forecast_hw_mult$mean, train_testm$y_test)
-aic_hw_mult <- AIC(fit_hw_mult)
-results <- rbind(results, data.frame(Model = "Holt-Winters Multiplicative", MSE = mse_hw_mult, AIC = aic_hw_mult))
+# Holt-Winters Additive Seasonality (via ETS)
+fit_hw_add_m <- ets(train_series_m, model = "AAA")
+forecast_hw_add_m <- forecast(fit_hw_add_m, h = length(y_testm))
+mse_hw_add_m <- mse(forecast_hw_add_m$mean, y_testm)
+aic_hw_add_m <- AIC(fit_hw_add_m)
+results_m <- rbind(results_m, data.frame(Model = "Holt-Winters Additive", MSE = mse_hw_add_m, AIC = aic_hw_add_m))
+# The results are worse than the ETS model, with a MSE of 114.8030 and an AIC of 274.4056.
 
-# 4. Regression + ETS Model
-fit_reg <- lm(y_train_m ~ trainm$Month + trainm$Year + trainm$fish_cons)
-residuals_reg <- residuals(fit_reg)
-fit_res_ets <- ets(residuals_reg)
-forecast_res_ets <- forecast(fit_res_ets, h = length(train_testm$y_test))
-mse_reg_ets <- mse(forecast_res_ets$mean, train_testm$y_test)
-aic_reg <- AIC(fit_reg)  # AIC for the regression model
-aic_res_ets <- AIC(fit_res_ets)  # AIC for the ETS model on residuals
-results <- rbind(results, data.frame(Model = "Regression + ETS", MSE = mse_reg_ets, AIC = aic_res_ets))
+# Holt-Winters Multiplicative Seasonality (via ETS)
+fit_hw_mult_m <- ets(train_series_m, model = "MAM")
+forecast_hw_mult_m <- forecast(fit_hw_mult_m, h = length(y_testm))
+mse_hw_mult_m <- mse(forecast_hw_mult_m$mean, y_testm)
+aic_hw_mult_m <- AIC(fit_hw_mult_m)
+results_m <- rbind(results_m, data.frame(Model = "Holt-Winters Multiplicative", MSE = mse_hw_mult_m, AIC = aic_hw_mult_m))
+# It's appening the same as before, the results are worse than the ETS model, with a MSE of 177.2098 and an AIC of 274.7737.
 
 # Print the results
-print(results)
+print(results_m)
+# So as we can see from the table the best model for the Baccala Mantecato series is the ETS model, inlcuding additive and multiplicative seasonality
+# doesn’t improve the results obtained with the classic ETS model so we decide to keep the one with the lowest MSE.
+
+checkresiduals(fit_ES_m)
+# The residuals of the ETS model are normally distributed, with no significant autocorrelation,
+# Finish to comment it.
+
+ggplot() +
+  geom_line(aes(x = data$Date, y = data$Baccala_Mantecato, color = "Actual Values"), size = 1) +
+  geom_line(aes(x = train$Date, y = fitted(fit_ES_m), color = "Train Fitted Values (ETS)"), size = 1) +
+  geom_line(aes(x = test$Date, y = forecast(fit_ES_m, h = nrow(test))$mean, 
+                color = "Test Predicted Values (ETS)"), size = 1) +
+  labs(
+    title = "Time Series: Actual vs Predicted Values (ETS Model)",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", text = element_text(size = 12))
 
 ### Baccala Vicentina ----
-results <- data.frame(
+
+# Now we do the same also for the Baccala Vicentina series
+
+# Initialize a data frame to store the results
+results_v <- data.frame(
   Model = character(),
   MSE = numeric(),
   AIC = numeric(),
   stringsAsFactors = FALSE
 )
 
-# 1. ETS Model
-train_series_v <- ts(train_testv$y_train, start = c(2021, 1), frequency = 12)
+# Create the time series object for training
+train_series_v <- ts(train$Baccala_Vicentina, start = c(2021, 1), frequency = 12)
+
+# ETS Model
 fit_ES_v <- ets(train_series_v)
-forecast_ES_v <- forecast(fit_ES_v, h = length(train_testv$y_test))
-mse_ets <- mse(forecast_ES_v$mean, train_testv$y_test)
-aic_ets <- AIC(fit_ES_v)
-results <- rbind(results, data.frame(Model = "ETS", MSE = mse_ets, AIC = aic_ets))
+forecast_ES_v <- forecast(fit_ES_v, h = length(y_testv))
+mse_ets_v <- mse(forecast_ES_v$mean, y_testv)
+aic_ets_v <- AIC(fit_ES_v)
+results_v <- rbind(results_v, data.frame(Model = "ETS", MSE = mse_ets_v, AIC = aic_ets_v))
+# With the initial exponential smoothing model we obtained a really good MSE of 1.475781 and an AIC of 105.6035,
+# and these are already good results.
+# However, we also try the ETS model with additive and multiplicative seasonality to see if we 
+# can improve the already results.
 
-# 2. Additive Seasonality (Holt-Winters via ETS)
+# Holt-Winters Additive Seasonality (via ETS)
 fit_hw_add_v <- ets(train_series_v, model = "AAA")
-forecast_hw_add_v <- forecast(fit_hw_add_v, h = length(train_testv$y_test))
-mse_hw_add <- mse(forecast_hw_add_v$mean, train_testv$y_test)
-aic_hw_add <- AIC(fit_hw_add_v)
-results <- rbind(results, data.frame(Model = "Holt-Winters Additive", MSE = mse_hw_add, AIC = aic_hw_add))
+forecast_hw_add_v <- forecast(fit_hw_add_v, h = length(y_testv))
+mse_hw_add_v <- mse(forecast_hw_add_v$mean, y_testv)
+aic_hw_add_v <- AIC(fit_hw_add_v)
+results_v <- rbind(results_v, data.frame(Model = "Holt-Winters Additive", MSE = mse_hw_add_v, AIC = aic_hw_add_v))
+# Including additive seasonality doesn’t improve the results obtained with the classic ETS model, since 
+# the MSE is 1.512441 and the AIC is 111.4078.
 
-# 3. Multiplicative Seasonality (Holt-Winters via ETS)
+# Holt-Winters Multiplicative Seasonality (via ETS)
 fit_hw_mult_v <- ets(train_series_v, model = "MAM")
-forecast_hw_mult_v <- forecast(fit_hw_mult_v, h = length(train_testv$y_test))
-mse_hw_mult <- mse(forecast_hw_mult_v$mean, train_testv$y_test)
-aic_hw_mult <- AIC(fit_hw_mult_v)
-results <- rbind(results, data.frame(Model = "Holt-Winters Multiplicative", MSE = mse_hw_mult, AIC = aic_hw_mult))
-
-# 4. Regression + ETS Model
-fit_reg_v <- lm(Baccala_Vicentina ~ Month + Year + fish_cons, data = trainv)
-residuals_reg_v <- residuals(fit_reg_v)
-fit_res_ets_v <- ets(residuals_reg_v)
-forecast_res_ets_v <- forecast(fit_res_ets_v, h = length(train_testv$y_test))
-mse_reg_ets <- mse(forecast_res_ets_v$mean, train_testv$y_test)
-aic_reg_ets <- AIC(fit_res_ets_v)
-results <- rbind(results, data.frame(Model = "Regression + ETS", MSE = mse_reg_ets, AIC = aic_reg_ets))
+forecast_hw_mult_v <- forecast(fit_hw_mult_v, h = length(y_testv))
+mse_hw_mult_v <- mse(forecast_hw_mult_v$mean, y_testv)
+aic_hw_mult_v <- AIC(fit_hw_mult_v)
+results_v <- rbind(results_v, data.frame(Model = "Holt-Winters Multiplicative", MSE = mse_hw_mult_v, AIC = aic_hw_mult_v))
+# Including multiplicative seasonality instead, slightly improve the obtained MSE reducing it to 1.434768, 
+# on the other hand it increases the AIC to 109.9921.
 
 # Print the results
-print(results)
+print(results_v)
+# Since our goal is to minimize the MSE, we decide to keep the Holt-Winters with multiplicative seasonality
+# which has the lowest MSE among the three models.
 
+checkresiduals(fit_ES_v)
+
+ggplot() +
+  geom_line(aes(x = data$Date, y = data$Baccala_Vicentina, color = "Actual Values"), size = 1) +
+  geom_line(aes(x = train$Date, y = fitted(fit_hw_mult_v ), color = "Train Fitted Values (ETS)"), size = 1) +
+  geom_line(aes(x = test$Date, y = forecast(fit_hw_mult_v , h = nrow(test))$mean, 
+                color = "Test Predicted Values (HWMS)"), size = 1) +
+  labs(
+    title = "Time Series: Actual vs Predicted Values (Holt-Winters Multiplicative Seasonality Model)",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", text = element_text(size = 12))
 
 ## Local Regression ----
 
 ### Baccala Mantecato ----
 
-# Ensure data_copy exists as a copy of your dataset
-data_copy <- data
+# Add a time index to the dataset
+data$tt <- seq_len(nrow(data))
 
-# Add a time index to the copied dataset
-data_copy$tt <- seq_len(nrow(data_copy))
+# Train-Test Split for Local Regression
+split_index <- floor(0.9 * nrow(data))
+trainm <- data[1:split_index, ]
+testm <- data[(split_index + 1):nrow(data), ]
 
-# Perform a chronological train-test split (90% train, 10% test)
-split_index <- floor(0.9 * nrow(data_copy))  # 90% split
-trainm <- data_copy[1:split_index, ]
-testm <- data_copy[(split_index + 1):nrow(data_copy), ]
+# Fit a Loess Model on the training data
+best_span <- 0.3  # Tuning parameter for smoothing
+fit_loess_m <- loess(Baccala_Mantecato ~ tt, data = trainm, span = best_span)
 
-# Fit Loess Model on the training data only
-best_span <- 0.3  # Adjust span based on prior tuning
-fit_loess <- loess(Baccala_Mantecato ~ tt, data = trainm, span = best_span)
+# Predict for both train and test datasets
+trainm$loess_fitted <- predict(fit_loess_m)
+testm$loess_forecast <- predict(fit_loess_m, newdata = testm)
 
-# Generate Loess predictions for the training set
-trainm$loess_fitted <- predict(fit_loess)
-
-# Generate Loess predictions for the test set
-testm$loess_forecast <- predict(fit_loess, newdata = data.frame(tt = testm$tt))
-
-# Handle NA predictions for points outside the training range using a linear model
-na_indices <- is.na(testm$loess_forecast)
-if (any(na_indices)) {
-  linear_model <- lm(Baccala_Mantecato ~ tt, data = trainm)
-  testm$loess_forecast[na_indices] <- predict(linear_model, newdata = data.frame(tt = testm$tt[na_indices]))
+# Handle NA predictions using linear regression (extrapolation)
+na_indices_m <- is.na(testm$loess_forecast)
+if (any(na_indices_m)) {
+  linear_model_m <- lm(Baccala_Mantecato ~ tt, data = trainm)
+  testm$loess_forecast[na_indices_m] <- predict(linear_model_m, newdata = testm[na_indices_m, ])
 }
-
-# Combine train and test data into a single dataset for plotting
-plot_data <- bind_rows(
-  trainm %>% mutate(data_type = "Train Observed"),
-  testm %>% mutate(data_type = "Test Observed")
-)
 
 # Plot Results
 ggplot() +
-  geom_line(data = plot_data %>% filter(data_type == "Train Observed"),
-            aes(x = Date, y = Baccala_Mantecato, color = "Train Observed")) +
-  geom_line(data = plot_data %>% filter(data_type == "Test Observed"),
-            aes(x = Date, y = Baccala_Mantecato, color = "Test Observed")) +
+  geom_line(data = trainm, aes(x = Date, y = Baccala_Mantecato, color = "Train Observed")) +
+  geom_line(data = testm, aes(x = Date, y = Baccala_Mantecato, color = "Test Observed")) +
   geom_line(data = trainm, aes(x = Date, y = loess_fitted, color = "Loess Fitted")) +
-  scale_color_manual(values = c("Train Observed" = "#6BC3FF", 
-                                "Test Observed" = "#FF7F7F", 
-                                "Loess Fitted" = "#8FBC8F")) +
+  geom_line(data = testm, aes(x = Date, y = loess_forecast, color = "Loess Forecast")) +
+  scale_color_manual(values = c(
+    "Train Observed" = "#6BC3FF",
+    "Test Observed" = "#FF7F7F",
+    "Loess Fitted" = "#8FBC8F",
+    "Loess Forecast" = "#FFD700"
+  )) +
   labs(title = "Loess Fit for Baccala Mantecato",
-       x = "Date", y = "Baccala Mantecato") +
+       x = "Date",
+       y = "Baccala Mantecato",
+       color = "Legend") +
   theme_minimal()
 
-# Calculate MSE for Loess Fit on Test Data
-valid_forecast <- !is.na(testm$Baccala_Mantecato)
-loess_mse <- mean((testm$Baccala_Mantecato[valid_forecast] - testm$loess_forecast[valid_forecast])^2)
-cat(sprintf("Loess MSE on Test Data (Baccala Mantecato): %.5f\n", loess_mse))
+# Calculate MSE for Loess on the test set
+mse_loess_m <- mean((testm$Baccala_Mantecato - testm$loess_forecast)^2, na.rm = TRUE)
+cat(sprintf("Loess MSE on Test Data (Baccala Mantecato): %.5f\n", mse_loess_m))
 
 ### Baccala Vicentina ----
 
-# Ensure data_copy exists as a copy of your dataset
-data_copy <- data
+# Train-Test Split for Local Regression
+split_index <- floor(0.9 * nrow(data))
+trainv <- data[1:split_index, ]
+testv <- data[(split_index + 1):nrow(data), ]
 
-# Add a time index to the copied dataset
-data_copy$tt <- seq_len(nrow(data_copy))
+# Fit a Loess Model on the training data
+best_span_v <- 0.3  # Tuning parameter for smoothing
+fit_loess_v <- loess(Baccala_Vicentina ~ tt, data = trainv, span = best_span_v)
 
-# Perform a chronological train-test split (90% train, 10% test)
-split_index <- floor(0.9 * nrow(data_copy))  # 90% split
-trainv <- data_copy[1:split_index, ]
-testv <- data_copy[(split_index + 1):nrow(data_copy), ]
+# Predict for both train and test datasets
+trainv$loess_fitted <- predict(fit_loess_v)
+testv$loess_forecast <- predict(fit_loess_v, newdata = testv)
 
-# Fit Loess Model on the training data only
-best_span <- 0.3  # Adjust span based on prior tuning
-fit_loess <- loess(Baccala_Vicentina ~ tt, data = trainv, span = best_span)
-
-# Generate Loess predictions for the training set
-trainv$loess_fitted <- predict(fit_loess)
-
-# Generate Loess predictions for the test set
-testv$loess_forecast <- predict(fit_loess, newdata = data.frame(tt = testv$tt))
-
-# Handle NA predictions for points outside the training range using a linear model
-na_indices <- is.na(testv$loess_forecast)
-if (any(na_indices)) {
-  linear_model <- lm(Baccala_Vicentina ~ tt, data = trainv)
-  testv$loess_forecast[na_indices] <- predict(linear_model, newdata = data.frame(tt = testv$tt[na_indices]))
+# Handle NA predictions using linear regression (extrapolation)
+na_indices_v <- is.na(testv$loess_forecast)
+if (any(na_indices_v)) {
+  linear_model_v <- lm(Baccala_Vicentina ~ tt, data = trainv)
+  testv$loess_forecast[na_indices_v] <- predict(linear_model_v, newdata = testv[na_indices_v, ])
 }
-
-# Combine train and test data into a single dataset for plotting
-plot_data <- bind_rows(
-  trainv %>% mutate(data_type = "Train Observed"),
-  testv %>% mutate(data_type = "Test Observed")
-)
 
 # Plot Results
 ggplot() +
-  geom_line(data = plot_data %>% filter(data_type == "Train Observed"),
-            aes(x = Date, y = Baccala_Vicentina, color = "Train Observed")) +
-  geom_line(data = plot_data %>% filter(data_type == "Test Observed"),
-            aes(x = Date, y = Baccala_Vicentina, color = "Test Observed")) +
+  geom_line(data = trainv, aes(x = Date, y = Baccala_Vicentina, color = "Train Observed")) +
+  geom_line(data = testv, aes(x = Date, y = Baccala_Vicentina, color = "Test Observed")) +
   geom_line(data = trainv, aes(x = Date, y = loess_fitted, color = "Loess Fitted")) +
-  scale_color_manual(values = c("Train Observed" = "#6BC3FF", 
-                                "Test Observed" = "#FF7F7F", 
-                                "Loess Fitted" = "#8FBC8F")) +
+  geom_line(data = testv, aes(x = Date, y = loess_forecast, color = "Loess Forecast")) +
+  scale_color_manual(values = c(
+    "Train Observed" = "#6BC3FF",
+    "Test Observed" = "#FF7F7F",
+    "Loess Fitted" = "#8FBC8F",
+    "Loess Forecast" = "#FFD700"
+  )) +
   labs(title = "Loess Fit for Baccala Vicentina",
-       x = "Date", y = "Baccala Vicentina") +
+       x = "Date",
+       y = "Baccala Vicentina",
+       color = "Legend") +
   theme_minimal()
 
-# Calculate MSE for Loess Fit on Test Data
-valid_forecast <- !is.na(testv$Baccala_Vicentina)
-loess_mse <- mean((testv$Baccala_Vicentina[valid_forecast] - testv$loess_forecast[valid_forecast])^2)
-cat(sprintf("Loess MSE on Test Data (Baccala Vicentina): %.5f\n", loess_mse))
+# Calculate MSE for Loess on the test set
+mse_loess_v <- mean((testv$Baccala_Vicentina - testv$loess_forecast)^2, na.rm = TRUE)
+cat(sprintf("Loess MSE on Test Data (Baccala Vicentina): %.5f\n", mse_loess_v))
