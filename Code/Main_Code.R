@@ -739,6 +739,7 @@ results_v <- rbind(results_v, data.frame(Model = "Holt-Winters Additive", MSE = 
 fit_hw_mult_v <- ets(train_series_v, model = "MAM")
 forecast_hw_mult_v <- forecast(fit_hw_mult_v, h = length(y_testv))
 mse_hw_mult_v <- mse(forecast_hw_mult_v$mean, y_testv)
+mse_hw_mult_v_train <- mse(fitted(fit_hw_mult_v), train$Baccala_Vicentina)
 aic_hw_mult_v <- AIC(fit_hw_mult_v)
 results_v <- rbind(results_v, data.frame(Model = "Holt-Winters Multiplicative", MSE = mse_hw_mult_v, AIC = aic_hw_mult_v))
 # Including multiplicative seasonality instead, slightly improve the obtained MSE reducing it to 1.434768, 
@@ -801,85 +802,109 @@ test$tt <- (nrow(train) + 1):nrow(data)
 
 ### Baccala Mantecato ----
 
-
+# We initially focus on the Baccala Mantecato series, by different test we 
+# found that the best trade-off for the span parameter is 0.3.
 
 # Fit a Loess Model on the training data
-best_span <- 0.3  # Tuning parameter for smoothing
-fit_loess_m <- loess(Baccala_Mantecato ~ tt, data = trainm, span = best_span)
+best_span <- 0.3  # Tuned parameter for smoothing
+fit_loess_m <- loess(Baccala_Mantecato ~ tt, data = train, span = best_span)
 
 # Predict for both train and test datasets
-trainm$loess_fitted <- predict(fit_loess_m)
-testm$loess_forecast <- predict(fit_loess_m, newdata = testm)
+train$loess_fitted <- predict(fit_loess_m)
+test$loess_forecast <- predict(fit_loess_m, newdata = test)
+# We obtained all NA values in the forecast because the loess model 
+# is not able to predict values outside the training data range since the
+# loess algorithm uses locally weighted regression, which relies on neighboring data points to make predictions. 
+
+# To handle this issue, we can use linear regression to extrapolate the NA values.
 
 # Handle NA predictions using linear regression (extrapolation)
-na_indices_m <- is.na(testm$loess_forecast)
+na_indices_m <- is.na(test$loess_forecast)
 if (any(na_indices_m)) {
-  linear_model_m <- lm(Baccala_Mantecato ~ tt, data = trainm)
-  testm$loess_forecast[na_indices_m] <- predict(linear_model_m, newdata = testm[na_indices_m, ])
+  linear_model_m <- lm(Baccala_Mantecato ~ trend + Month + fish_cons, data = train)
+  test$loess_forecast[na_indices_m] <- predict(linear_model_m, newdata = test[na_indices_m, ])
 }
 
 # Plot Results
 ggplot() +
-  geom_line(data = trainm, aes(x = Date, y = Baccala_Mantecato, color = "Train Observed")) +
-  geom_line(data = testm, aes(x = Date, y = Baccala_Mantecato, color = "Test Observed")) +
-  geom_line(data = trainm, aes(x = Date, y = loess_fitted, color = "Loess Fitted")) +
-  geom_line(data = testm, aes(x = Date, y = loess_forecast, color = "Loess Forecast")) +
+  geom_line(data = train, aes(x = Date, y = Baccala_Mantecato, color = "Train Observed")) +
+  geom_line(data = test, aes(x = Date, y = Baccala_Mantecato, color = "Test Observed")) +
+  geom_line(data = train, aes(x = Date, y = loess_fitted, color = "Loess Fitted")) +
+  geom_line(data = test, aes(x = Date, y = loess_forecast, color = "Linear Regression Forecast")) +
   scale_color_manual(values = c(
     "Train Observed" = "#6BC3FF",
     "Test Observed" = "#FF7F7F",
     "Loess Fitted" = "#8FBC8F",
-    "Loess Forecast" = "#FFD700"
+    "Linear Regression Forecast" = "#FFD700"
   )) +
   labs(title = "Loess Fit for Baccala Mantecato",
        x = "Date",
        y = "Baccala Mantecato",
        color = "Legend") +
-  theme_minimal()
+  theme_minimal() +
+  theme(legend.position = "bottom", text = element_text(size = 12))
 
 # Calculate MSE for Loess on the test set
-mse_loess_m <- mean((testm$Baccala_Mantecato - testm$loess_forecast)^2, na.rm = TRUE)
+mse_loess_m <- mse(test$loess_forecast, test$Baccala_Mantecato)
 cat(sprintf("Loess MSE on Test Data (Baccala Mantecato): %.5f\n", mse_loess_m))
+# The MSE obtained is the one of the linear regression model, 
+# because the Loess model is not able to predict values outside the 
+# training data range.
+
+# Calculate MSE for Loess on the train set
+mse_loess_m_train <- mse(train$loess_fitted, train$Baccala_Mantecato)
+cat(sprintf("Loess MSE on Train Data (Baccala Mantecato): %.5f\n", mse_loess_m_train))
+
 
 ### Baccala Vicentina ----
 
-# Train-Test Split for Local Regression
-split_index <- floor(0.9 * nrow(data))
-trainv <- data[1:split_index, ]
-testv <- data[(split_index + 1):nrow(data), ]
+# We now focus on the Baccala Vicentina series.
 
 # Fit a Loess Model on the training data
-best_span_v <- 0.3  # Tuning parameter for smoothing
-fit_loess_v <- loess(Baccala_Vicentina ~ tt, data = trainv, span = best_span_v)
+best_span_v <- 0.3 # Tuned parameter for smoothing
+fit_loess_v <- loess(Baccala_Vicentina ~ tt, data = train, span = best_span_v)
 
 # Predict for both train and test datasets
-trainv$loess_fitted <- predict(fit_loess_v)
-testv$loess_forecast <- predict(fit_loess_v, newdata = testv)
+train$loess_fitted_v <- predict(fit_loess_v)
+test$loess_forecast_v <- predict(fit_loess_v, newdata = test)
+
+# Similar to the Mantecato case, we obtained all NA values in the forecast
+# because the loess model cannot predict values outside the training data range.
+
+# To handle this issue, we use linear regression to extrapolate the NA values.
 
 # Handle NA predictions using linear regression (extrapolation)
-na_indices_v <- is.na(testv$loess_forecast)
+na_indices_v <- is.na(test$loess_forecast_v)
 if (any(na_indices_v)) {
-  linear_model_v <- lm(Baccala_Vicentina ~ tt, data = trainv)
-  testv$loess_forecast[na_indices_v] <- predict(linear_model_v, newdata = testv[na_indices_v, ])
+  linear_model_v <- lm(Baccala_Vicentina ~ Month, data = train)
+  test$loess_forecast_v[na_indices_v] <- predict(linear_model_v, newdata = test[na_indices_v, ])
 }
 
 # Plot Results
 ggplot() +
-  geom_line(data = trainv, aes(x = Date, y = Baccala_Vicentina, color = "Train Observed")) +
-  geom_line(data = testv, aes(x = Date, y = Baccala_Vicentina, color = "Test Observed")) +
-  geom_line(data = trainv, aes(x = Date, y = loess_fitted, color = "Loess Fitted")) +
-  geom_line(data = testv, aes(x = Date, y = loess_forecast, color = "Loess Forecast")) +
+  geom_line(data = train, aes(x = Date, y = Baccala_Vicentina, color = "Train Observed")) +
+  geom_line(data = test, aes(x = Date, y = Baccala_Vicentina, color = "Test Observed")) +
+  geom_line(data = train, aes(x = Date, y = loess_fitted_v, color = "Loess Fitted")) +
+  geom_line(data = test, aes(x = Date, y = loess_forecast_v, color = "Linear Regression Forecast")) +
   scale_color_manual(values = c(
     "Train Observed" = "#6BC3FF",
     "Test Observed" = "#FF7F7F",
     "Loess Fitted" = "#8FBC8F",
-    "Loess Forecast" = "#FFD700"
+    "Linear Regression Forecast" = "#FFD700"
   )) +
   labs(title = "Loess Fit for Baccala Vicentina",
        x = "Date",
        y = "Baccala Vicentina",
        color = "Legend") +
-  theme_minimal()
+  theme_minimal() +
+  theme(legend.position = "bottom", text = element_text(size = 12))
 
 # Calculate MSE for Loess on the test set
-mse_loess_v <- mean((testv$Baccala_Vicentina - testv$loess_forecast)^2, na.rm = TRUE)
+mse_loess_v <- mse(test$loess_forecast_v, test$Baccala_Vicentina)
 cat(sprintf("Loess MSE on Test Data (Baccala Vicentina): %.5f\n", mse_loess_v))
+# The MSE obtained is the one from the linear regression model because the Loess model
+# cannot predict values outside the training data range.
+
+# Calculate MSE for Loess on the train set
+mse_loess_v_train <- mse(train$loess_fitted_v, train$Baccala_Vicentina)
+cat(sprintf("Loess MSE on Train Data (Baccala Vicentina): %.5f\n", mse_loess_v_train))
