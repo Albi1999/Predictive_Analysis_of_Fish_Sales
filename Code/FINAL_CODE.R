@@ -891,14 +891,26 @@ print(results_m)
 So as we can see from the table the best model for the Baccala Mantecato series is the ETS model, inlcuding additive and multiplicative seasonality
 doesn’t improve the results obtained with the classic ETS model so we decide to keep the one with the lowest MSE.
 ```{r}
-checkresiduals(fit_ES_m)
+tsdisplay(residuals(fit_ES_m), main = "Residuals of ETS Model")
+```
+The residuals of the ETS model seems randomly scattered around 0, without any visible pattern.
+This indicates that the model has appropriately captured the underlying trends in the data.
+However, there are some peaks and dips in the residuals that might suggest minor variations not captured by the model.
+As also the not so low MSE suggests, the model is not perfect but it is the best we can get.
+
+The ACF and PACF of the residuals reveal whether the residuals are uncorrelated and resemble white noise. 
+In this case, most lags fall within the confidence intervals, indicating that the residuals exhibit minimal autocorrelation. 
+This is a good sign as it suggests the ETS model is adequately modeling the data without leaving behind systematic errors.
+
+Finally we plot the predicted values and the actual ones.
+```{r}
 ggplot() +
   geom_line(aes(x = data$Date, y = data$Baccala_Mantecato, color = "Actual Values"), size = 1) +
   geom_line(aes(x = train$Date, y = fitted(fit_ES_m), color = "Train Fitted Values (ETS)"), size = 1) +
   geom_line(aes(x = test$Date, y = forecast(fit_ES_m, h = nrow(test))$mean, 
                 color = "Test Predicted Values (ETS)"), size = 1) +
   labs(
-    title = "Time Series: Actual vs Predicted Values (ETS Model)",
+    title = "Time Series: Actual vs Predicted Values - Baccalà Mantecato\nETS Model",
     x = "Date",
     y = "Value",
     color = "Legend"
@@ -906,6 +918,8 @@ ggplot() +
   theme_minimal() +
   theme(legend.position = "bottom", text = element_text(size = 12))
 ```
+As we can see from the plot the blue line representing the fitted values during the training phase closely follows the red line of actual values, which indicates that the ETS model is performing well in capturing the data''s behavior during training.
+The Exponential Smoothing model is able to capture the underlying trends in the data,the predicted values (Green Line) are close to the actual ones, and the model seems to be a good fit for the data, though it shows some deviation during more extreme values.
 
 ### Baccala Vicentina ----
 
@@ -962,15 +976,24 @@ print(results_v)
 Since our goal is to minimize the MSE, we decide to keep the Holt-Winters with multiplicative seasonality which has the lowest MSE among the three models.
 
 ```{r}
-checkresiduals(fit_ES_v)
+tsdisplay(residuals(fit_hw_mult_v), main = "Residuals of Holt-Winters Multiplicative Seasonality Model")
+```
+The residuals plot for the Holt-Winters Multiplicative Seasonality Model shows that the residuals are randomly distributed around zero, which is an indication of a good fit. 
+The residuals do not exhibit any apparent pattern or seasonality, which means the model has effectively accounted for the multiplicative seasonal variations in the data.
+
+The ACF and PACF for the residuals further confirm the randomness of the residuals. 
+There are no significant spikes outside the confidence bands, suggesting that the residuals are uncorrelated and approximate white noise. 
+This validates the model''s performance and confirms that it has captured the key elements of the time series.
+
+```{r}
 
 ggplot() +
   geom_line(aes(x = data$Date, y = data$Baccala_Vicentina, color = "Actual Values"), size = 1) +
-  geom_line(aes(x = train$Date, y = fitted(fit_hw_mult_v ), color = "Train Fitted Values (ETS)"), size = 1) +
+  geom_line(aes(x = train$Date, y = fitted(fit_hw_mult_v ), color = "Train Fitted Values (HWMS)"), size = 1) +
   geom_line(aes(x = test$Date, y = forecast(fit_hw_mult_v , h = nrow(test))$mean, 
                 color = "Test Predicted Values (HWMS)"), size = 1) +
   labs(
-    title = "Time Series: Actual vs Predicted Values (Holt-Winters Multiplicative Seasonality Model)",
+    title = "Time Series: Actual vs Predicted Values - Baccalà Vicentina\nHolt-Winters Multiplicative Seasonality Model",
     x = "Date",
     y = "Value",
     color = "Legend"
@@ -978,8 +1001,11 @@ ggplot() +
   theme_minimal() +
   theme(legend.position = "bottom", text = element_text(size = 12))
 ```
+Looking to the plot we can see that the fitted values during the training period are well aligned with the actual values, demonstrating that the Holt-Winters model effectively captures the multiplicative seasonal behavior of the time series. 
+However, the model''s performance slightly deteriorates during the peaks and troughs, which is expected for such models.
 
-
+In the test period, the green line representing the predicted values shows a good alignment with the actual values, maintaining the seasonal structure. 
+Some underestimations occur during sharp spikes in the data, but overall, the model provides reliable forecasts.
 
 
 ## Local Regression ----
