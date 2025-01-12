@@ -144,7 +144,7 @@ Acf(data$Baccala_Vicentina, main = "ACF of Baccala Vicentina", col = "#6BC3FF", 
 
 # In this section, we perform a train-test split to prepare the data for model training and evaluation. 
 # We divide the time series data for both Baccala Mantecato and Baccala Vicentina into training and testing sets, 
-# with 90% of the data allocated for training and the remaining 10% for testing.
+# with 80% of the data allocated for training and the remaining 20% for testing.
 
 prop <- 0.8
 
@@ -656,6 +656,9 @@ forecast_hw_mult_m <- forecast(fit_hw_mult_m, h = length(y_testm))
 mse_hw_mult_m <- mse(forecast_hw_mult_m$mean, y_testm)
 aic_hw_mult_m <- AIC(fit_hw_mult_m)
 results_m <- rbind(results_m, data.frame(Model = "Holt-Winters Multiplicative", MSE = mse_hw_mult_m, AIC = aic_hw_mult_m))
+
+mse_ets_m_train <- mse(fitted(fit_ES_m), train$Baccala_Mantecato)
+
 # It's appening the same as before, the results are worse than the ETS model, with a MSE of 177.2098 and an AIC of 274.7737.
 
 # Print the results
@@ -682,7 +685,7 @@ ggplot() +
   geom_line(aes(x = test$Date, y = forecast(fit_ES_m, h = nrow(test))$mean, 
                 color = "Test Predicted Values (ETS)"), size = 1) +
   labs(
-    title = "Time Series: Actual vs Predicted Values - Baccalà Mantecato\nETS Model",
+    title = "Time Series: Actual vs Predicted Values - Baccala Mantecato\nETS Model",
     x = "Date",
     y = "Value",
     color = "Legend"
@@ -764,7 +767,7 @@ ggplot() +
   geom_line(aes(x = test$Date, y = forecast(fit_hw_mult_v , h = nrow(test))$mean, 
                 color = "Test Predicted Values (HWMS)"), size = 1) +
   labs(
-    title = "Time Series: Actual vs Predicted Values - Baccalà Vicentina\nHolt-Winters Multiplicative Seasonality Model",
+    title = "Time Series: Actual vs Predicted Values - Baccala Vicentina\nHolt-Winters Multiplicative Seasonality Model",
     x = "Date",
     y = "Value",
     color = "Legend"
@@ -786,15 +789,19 @@ ggplot() +
 
 ## Local Regression ----
 
+# Now we focus on the Local Regression model, which is a non-parametric regression 
+# method that fits a separate regression model to each point in the dataset.
+
+# The idea is to fit a Loess model to the data, firts to the Baccala Mantecato series and then to the Baccala Vicentina series.
+
+# Add a time index to the dataset to perform local regression
+data$tt <- seq_len(nrow(data))
+train$tt <- seq_len(nrow(train))
+test$tt <- (nrow(train) + 1):nrow(data)
+
 ### Baccala Mantecato ----
 
-# Add a time index to the dataset
-data$tt <- seq_len(nrow(data))
 
-# Train-Test Split for Local Regression
-split_index <- floor(0.9 * nrow(data))
-trainm <- data[1:split_index, ]
-testm <- data[(split_index + 1):nrow(data), ]
 
 # Fit a Loess Model on the training data
 best_span <- 0.3  # Tuning parameter for smoothing

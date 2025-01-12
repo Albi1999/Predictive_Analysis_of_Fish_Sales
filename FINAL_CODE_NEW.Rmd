@@ -7,9 +7,8 @@ output:
       collapsed: true
       smooth_scroll: true
     number_sections: true
-    theme: united
+    theme: cerulean
     highlight: tango
-    code_folding: show
     fig_width: 8
     fig_height: 6
     fig_caption: true
@@ -17,14 +16,9 @@ output:
     self_contained: no
     df_print: paged
     smooth_scroll: true
-    code_download: true
-    code_download_args:
-      type: 'button'
-      label: 'Download Code'
-      filename: 'code_file.R'
 ---
 
-# Analysis of Baccala Mantecato and Baccala alla Vicentina
+Analysis of Baccala Mantecato and Baccala alla Vicentina
 
 ## Package Loading and General Configuration
 
@@ -871,6 +865,7 @@ The ets() function fits an exponential smoothing model, automatically selecting 
 ```{r}
 forecast_ES_m <- forecast(fit_ES_m, h = length(y_testm))
 mse_ets_m <- mse(forecast_ES_m$mean,  y_testm)
+mse_ets_m_train <- mse(fitted(fit_ES_m), train$Baccala_Mantecato)
 aic_ets_m <- AIC(fit_ES_m)
 results_m <- rbind(results_m, data.frame(Model = "ETS", MSE = mse_ets_m, AIC = aic_ets_m))
 ```
@@ -935,6 +930,7 @@ As we can see from the plot the blue line representing the fitted values during 
 The Exponential Smoothing model is able to capture the underlying trends in the data,the predicted values (Green Line) are close to the actual ones, and the model seems to be a good fit for the data, though it shows some deviation during more extreme values.
 
 
+
 #### Baccala Vicentina
 
 Now we do the same also for the Baccala Vicentina series
@@ -979,6 +975,7 @@ Holt-Winters Multiplicative Seasonality (via ETS)
 fit_hw_mult_v <- ets(train_series_v, model = "MAM")
 forecast_hw_mult_v <- forecast(fit_hw_mult_v, h = length(y_testv))
 mse_hw_mult_v <- mse(forecast_hw_mult_v$mean, y_testv)
+mse_hw_mult_v_train <- mse(fitted(fit_hw_mult_v), train$Baccala_Vicentina)
 aic_hw_mult_v <- AIC(fit_hw_mult_v)
 results_v <- rbind(results_v, data.frame(Model = "Holt-Winters Multiplicative", MSE = mse_hw_mult_v, AIC = aic_hw_mult_v))
 ```
@@ -1024,13 +1021,13 @@ Some underestimations occur during sharp spikes in the data, but overall, the mo
 ## Results
 
 ```{r}
-name_models <- c("Linear Regression", "SARIMA", "Prophet", "SARIMAX")
+name_models <- c("Linear Regression", "SARIMA", "Prophet", "SARIMAX", "Exponential Smoothing")
 
-mse_train_m <- c(mse_train_lrm, mse_train_sarimam, mse_train_prm, mse_train_sarimaxm)
-mse_train_v <- c(mse_train_lrv, mse_train_sarimav, mse_train_prv, mse_train_sarimaxv)
+mse_train_m <- c(mse_train_lrm, mse_train_sarimam, mse_train_prm, mse_train_sarimaxm, mse_ets_m_train)
+mse_train_v <- c(mse_train_lrv, mse_train_sarimav, mse_train_prv, mse_train_sarimaxv, mse_hw_mult_v_train)
 
-mse_test_m <- c(mse_test_lrm, mse_test_sarimam, mse_test_prm, mse_test_sarimaxm)
-mse_test_v <- c(mse_test_lrv, mse_test_sarimav, mse_test_prv, mse_test_sarimaxv)
+mse_test_m <- c(mse_test_lrm, mse_test_sarimam, mse_test_prm, mse_test_sarimaxm, mse_ets_m)
+mse_test_v <- c(mse_test_lrv, mse_test_sarimav, mse_test_prv, mse_test_sarimaxv, mse_hw_mult_v)
 
 results <- data.frame(
   Model = name_models,
