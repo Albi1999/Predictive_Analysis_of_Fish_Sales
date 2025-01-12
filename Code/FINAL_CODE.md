@@ -1,8 +1,4 @@
-# Analysis of Baccala Mantecato and Baccala alla Vicentina
-
-## Package Loading and General Configuration
-
-```{r LIBRARIES, message=FALSE, warning=FALSE}
+```{r load_libraries_configurations, message=FALSE, warning=FALSE}
 rm(list=ls())
 
 library(readxl)
@@ -17,16 +13,14 @@ library(forecast)
 library(lmtest)
 library(prophet)
 library(gam)
+library(knitr)
 
-```
-
-```{r, warning=FALSE}
 source("Code/Functions_Utilies.R")
 ```
 
-## Data Loading and Preprocessing
+# Data Loading and Preprocessing
 
-```{r, message=FALSE, warning=FALSE}
+```{r load_preprocess_data, message=FALSE, warning=FALSE}
 data <- read_csv("Data/data.csv")
 data$Date <- as.Date(data$Date, format = "%Y-%m-%d") # ensure date format
 data <- data %>% mutate(Month = format(Date, "%m"),
@@ -37,7 +31,7 @@ head(data,3)
 ```
 
 Check for missing values
-```{r}
+```{r analyze_missing_values}
 colSums(is.na(data))
 ```
 
@@ -46,7 +40,7 @@ We also tried incorporating different variables, such as the NIC for fish produc
 Additionally, some other variables we tried do not have monthly data that match the frequency of the sales data we are working with, limiting their usefulness in the context of our time series analysis.
 
 Here we focus on the salmon consumption only because we have seen that other fishes or their aggregate value lead worst results.
-```{r}
+```{r preprocess_salmon_consumption}
 fish_cons <- read_excel("Data/Fish_consumption_ita_raw.xlsx") %>%
   filter(CG == "Salmon") %>%
   mutate(kg = as.numeric(`volume(Kg)`)) %>%
@@ -71,16 +65,16 @@ kg_std: Represents the standardized version of the kg column. Since the values i
 kg: Represents the quantity of salmon sold in Italy, measured in kilograms.
 
 Finally we aggregate the salmon monthly consumption time series to our data.
-```{r}
+```{r aggregate_salmon_consumption}
 data$fish_cons <- fish_cons$kg_std[,1]
 head(data,3)
 ```
 
-## Explanatory Analysis
+# Explanatory Analysis
 
 First, we visualize the time series of Baccala Mantecato and Baccala Vicentina over time.
 This plot helps us compare the trend of sales for both products on a monthly basis.
-```{r message=FALSE, warning=FALSE}
+```{r exploratory_baccala_analysis, message=FALSE, warning=FALSE}
 ggplot(data, aes(x = Date)) +
   geom_line(aes(y = Baccala_Mantecato, color = "Baccala Mantecato"), size = 1) +
   geom_line(aes(y = Baccala_Vicentina, color = "Baccala Vicentina"), size = 1) +
@@ -96,7 +90,7 @@ The sales quantities of Baccala Mantecato and Baccala Vicentina show significant
 
 Next, we plot the time series for both products grouped by year.
 The goal is to observe yearly trends and patterns for Baccala Mantecato and Baccala Vicentina separately.
-```{r}
+```{r yearly_trends_baccala_sales}
 plot1 <- ggplot(data, aes(x = Month, y = Baccala_Mantecato, color = Year, group = Year)) +
   geom_line() + 
   labs(x = "Month", y = "Baccala Mantecato", 
@@ -119,7 +113,7 @@ Additionally, regarding Baccala Mantecato, it appears that during the earlier ye
 
 Finally, we also examined the properties of the time series by plotting the autocorrelation functions (ACF).
 
-```{r}
+```{r acf_pacf_analysis}
 ym = ts(data$Baccala_Mantecato, frequency = 12, start = c(2021, 1))
 yv = ts(data$Baccala_Vicentina, frequency = 12, start = c(2021, 1))
 
@@ -142,10 +136,10 @@ We now that autocorrelation occurs when the effect of a avriable is spread over 
 However, within the bands, the autocorrelations exhibit a sinusoidal pattern, suggesting the presence of seasonality in the data, where periodic fluctuations occur over time. The peak at lag 12 further supports the idea of a cyclical effect.
 We will analyze the residuals of future models to confirm or disprove the presence of this seasonality.
 
-## TRAIN/TEST SPLIT
+# Train & Test Split
 
 In this section, we perform a train-test split to prepare the data for model training and evaluation. We divide the time series data for both Baccala Mantecato and Baccala Vicentina into training and testing sets, with 90% of the data allocated for training and the remaining 10% for testing.
-```{r}
+```{r train_test_split}
 prop <- 0.8
 
 n_sample <- floor(nrow(data) * prop)
@@ -160,7 +154,7 @@ y_testm <- test[["Baccala_Mantecato"]]
 y_testv <- test[["Baccala_Vicentina"]]
 ```
 
-```{r}
+```{r train_test_visualization}
 Type = c(rep("Train", dim(train)[1]), rep("Test", dim(test)[1]))
 ggplot(data, aes(x = trend, y = Baccala_Mantecato, color = Type)) +
   geom_line(size = 1) +
@@ -182,13 +176,13 @@ ggplot(data, aes(x = trend, y = Baccala_Vicentina, color = Type)) +
   theme(legend.position = "bottom")
 ```
 
-## Modelling Phase
+# Modelling Phase
 
-### Linear Regression Model
+## Linear Regression Model
 
-#### Baccala Mantecato
+### Baccala Mantecato
 We start by estimating a simple linear regression model with all the possible variables
-```{r}
+```{r linear_regression_baccala_mantecato}
 lr_m <- lm(Baccala_Mantecato ~ trend + Month + fish_cons, data = train)
 summary(lr_m)
 ```
@@ -201,7 +195,7 @@ Then we take a closer look to the coefficents:
 
 Now we try removing variables to evaluate their impact on model performance using AIC and adjusted R² values.
 
-```{r}
+```{r coefficient_analysis_baccala_mantecato}
 #lr_m_<missing_variable>
 lr_m_month <- lm(Baccala_Mantecato ~ trend + fish_cons, data = train)
 lr_m_trend <- lm(Baccala_Mantecato ~ Month + fish_cons, data = train)
@@ -226,14 +220,12 @@ cat("  Adjusted R²:", summary(lr_m)$adj.r.squared, "\n")
 As we can expect by the summary of the full model, from the AIC and Adjusted R² results we clearly see that the best model fit belong to the full model with all predictors: trend, monthly seasonality and fish consumption.
 
 Finally we will analyze the residuals.
-```{r}
+```{r residual_analysis_baccala_mantecato}
 resid_lr <- residuals(lr_m)
 mse_train_lrm <- mean(resid_lr^2)
 #checkresiduals(lr_m)
 tsdisplay(resid_lr)
-```
 
-```{r}
 dwtest(lr_m)
 ```
 
@@ -243,7 +235,7 @@ Since the p-value is smaller than the significance level (0.05), we don't reject
 
 Finally we plot the predicted values and the actual ones. We also compute the MSE on the test set.
 
-```{r}
+```{r prediction_plot_baccala_mantecato}
 ggplot() +
   geom_line(aes(x = data$Date, y = data$Baccala_Mantecato, color = "Actual Values"), size = 1) +
   geom_line(aes(x = train$Date, y = fitted(lr_m), color = "Fitted Values (Train)"), size = 1) +
@@ -266,18 +258,18 @@ mse_test_lrm <- mse(predict(lr_m, newdata = test), test$Baccala_Mantecato)
 print(mse_test_lrm)
 ```
 
-#### Baccala Vicentina
+### Baccala Vicentina
 
 The same analysis is conducted below for the Baccala Vicentina variable.
 
-```{r}
+```{r linear_regression_baccala_vicentina}
 lr_v_full <- lm(Baccala_Vicentina ~ trend + Month + fish_cons, data = train)
 summary(lr_v_full)
 ```
 
 This time the fish consumption seems to be not useful to imporve the model pefromance so we remove it
 
-```{r}
+```{r linear_regression_baccala_vicentina_1}
 lr_v <- update(lr_v_full, .~. - fish_cons)
 summary(lr_v)
 ```
@@ -285,7 +277,7 @@ summary(lr_v)
 The adjusted R² increses from 0.8261 to 0.8305 suggesting that the reduced model is better than the full one. 
 Furthermore, the trend variable shows a large p-value, suggesting that it can be removed from the model without significantly affecting the results.
 
-```{r}
+```{r linear_regression_baccala_vicentina_2}
 lr_v <- update(lr_v, .~. - trend)
 summary(lr_v)
 ```
@@ -296,7 +288,7 @@ Moreover, the fitted model is statistically significant, as shown by the F-stati
 
 Below, we compare the difference in AIC and adjusted R² between the full model and the one with only the monthly seasonality.
 
-```{r}
+```{r linear_regression_baccala_vicentina_3}
 cat("Model with month:\n")
 cat("  AIC:", AIC(lr_v), "\n")
 cat("  Adjusted R²:", summary(lr_v)$adj.r.squared, "\n\n")
@@ -310,22 +302,19 @@ The model with only the monthly seasonality performs better than the full model 
 
 Finally we will analyze the residuals.
 
-```{r}
+```{r residual_analysis_baccala_vicentina}
 resid_lrv <- residuals(lr_v)
 mse_train_lrv <- mean(resid_lrv^2)
 #checkresiduals(lr_v)
 tsdisplay(resid_lrv)
-```
 
-
-```{r}
 dwtest(lr_v)
 ```
 
 The Durbin-Watson test, that is used to check for autocorrelation in the residuals of a regression model.mSince the p-value is greater than the significance level (0.05), we reject the null hypothesis.
 
 Finally we plot the predicted values and the actual ones. We also compute the MSE on the test set.
-```{r}
+```{r prediction_plot_baccala_vicentina}
 ggplot() +
   geom_line(aes(x = data$Date, y = data$Baccala_Vicentina, color = "Actual Values"), size = 1) +
   geom_line(aes(x = train$Date, y = fitted(lr_v), color = "Fitted Values (Train)"), size = 1) +
@@ -347,31 +336,31 @@ mse_test_lrv <- mse(predict(lr_v, newdata = test), test$Baccala_Vicentina)
 print(mse_test_lrv)
 ```
 
-### GAM Models
-#### Baccala Mantecato
+## GAM Models
+### Baccala Mantecato
 Now we explore if we can benefit from non-linear models, in particular we try a GAM model and compare it with the Multiple Linear Regression selected model.
 We start from the LR model
-```{r}
+```{r gam_analysis_baccala_mantecato}
 g0 = gam(Baccala_Mantecato ~ trend + Month + fish_cons, data = train) #this is equivalent to lr_m
 ```
 
 Now we plot the linear effects to see if they may require smoothing functions
-```{r}
+```{r gam_analysis_baccala_mantecato_2}
 par(mfrow=c(1,2))
 plot(g0)
 ```
 
 We clearly see a perfectly linear relation between the predictors and the response variable, this plots suggests to stop our non-linear analysis. To be sure we try anyway to include smoothing variables
-```{r}
+```{r gam_analysis_baccala_mantecato_3}
 g1 <- gam(Baccala_Mantecato ~ s(trend, df=2) + Month + s(fish_cons, df=2), data = train)
 summary(g1)
 ```
 
 Based on the df and on the 'Anova for Nonparametric Effects' results, where the nonparametric F-values for s(trend) and s(fish_cons) are not statistically significant (with p-values of 0.19369 and 0.07973 respectively), it is clear that these variables do not exhibit nonlinear relationships with the response variable as we initially expected. Therefore, for reasons of parsimony, interpretability, and simplicity, we exclude the GAM model in favor of a straightforward multiple linear regression model, which aligns better with the data and offers more meaningful results.
 
-#### Baccala Vicentina 
+### Baccala Vicentina 
 Let's see if the same holds for Baccala_Vicentina.
-```{r message=FALSE, warning=FALSE}
+```{r gam_analysis_baccala_vicentina, message=FALSE, warning=FALSE}
 g0_v = gam(Baccala_Vicentina ~ trend + Month + fish_cons, data = train) #this is equivalent to lr_v_full (remember that the best one was lr_v (only Month as X))
 
 par(mfrow=c(1,2))
@@ -385,19 +374,19 @@ So we keep it.
 This analysis clearly indicates that both results suggest against the use of models that fit nonlinear relationships, such as GAMs.
 
 
-### SARIMA Model
+## SARIMA Model
 
-#### Baccala Mantecato
+### Baccala Mantecato
 
 To begin, we first transform the sales data of Baccala Mantecato into a time series object:
 
-```{r message=FALSE, warning=FALSE}
+```{r ts_m, message=FALSE, warning=FALSE}
 ts_m <- ts(train$Baccala_Mantecato, start = c(2021, 01), frequency = 12)
 plot.ts(ts_m)
 ```
 From the plot above and the significance of the trend coefficient in the regression model discussed in the previous section, we might consider taking the first difference to observe the behavior of the ACF and PACF.
 
-```{r}
+```{r ts_M_1}
 ts_m1 <- diff(ts_m,1)
 tsdisplay(diff(ts_m,1))
 #Acf(ts_m1, main = "ACF of Baccala Mantecato with Lag 1", col = "#FF7F7F", lwd = 2)
@@ -408,7 +397,7 @@ tsdisplay(diff(ts_m,1))
 Both the ACF and PACF plots show a sinusoidal pattern, with all values falling within the confidence bands, except for a significant spike at lag 12. 
 This suggests that a SARIMA model with a seasonal period s=12, accounting for monthly data with yearly seasonality, might be appropriate for this time series.
 
-```{r}
+```{r ts_M_12}
 ts_m_12 <- diff(ts_m, lag = 12)
 tsdisplay(diff(ts_m, lag = 12))
 #Acf(ts_m_12, main = "ACF of Baccala Mantecato with Lag 12", col = "#FF7F7F", lwd = 2)
@@ -417,7 +406,7 @@ tsdisplay(diff(ts_m, lag = 12))
 
 Now, we will build three SARIMA models. The first model will incorporate a non-seasonal differencing (with d=1), one autoregressive term (AR(1)), and a seasonal differencing with a period of 12 (to account for the yearly seasonality). The second model will instead include a moving average (MA(1)) term along with the differencing. The last one only incorporate the differencing.
 
-```{r}
+```{r sarima_baccala_mantecato}
 # SARIMA (1,1,0)(0,1,0)[12]
 sarima_model1m <- Arima(ts_m, order=c(1,1,0), seasonal=c(0,1,0))
 summary(sarima_model1m)
@@ -431,7 +420,7 @@ sarima_model3m <- Arima(ts_m, order=c(0,1,0), seasonal=c(0,1,0))
 summary(sarima_model3m)
 ```
 
-```{r}
+```{r mse_sarima_baccala_mantecato}
 mse(test$Baccala_Mantecato, forecast(sarima_model1m, h = length(y_testm))$mean)
 mse(test$Baccala_Mantecato, forecast(sarima_model2m, h = length(y_testm))$mean)
 mse_test_sarimam <- mse(test$Baccala_Mantecato, forecast(sarima_model3m, h = length(y_testm))$mean)
@@ -441,7 +430,7 @@ mse_test_sarimam
 
 Based on the AIC values, the SARIMA(0,1,1)(0,1,0)[12] model is the better model. It has a lower AIC compared to the other SARIMA models. By the way, evaluating the performance on the test set, we notice that the MSE is larger for the AIC best model, while the SARIMA(0,1,0)(0,1,0)[12] perform better on the test set. We decide to continue whit the last one.
 
-```{r}
+```{r prediction_plot_baccala_mantecato_sarima}
 ggplot() +
   geom_line(aes(x = data$Date, y = data$Baccala_Mantecato, color = "Actual Values"), size = 1) +
   geom_line(aes(x = train$Date, y = fitted(sarima_model3m), color = "Fitted Values (Train)"), size = 1) +
@@ -463,7 +452,7 @@ ggplot() +
 
 
 
-```{r}
+```{r residual_analysis_baccala_mantecato__}
 resid3 <- residuals(sarima_model3m)
 mse_train_sarimam <- mean(resid3^2)
 tsdisplay(resid3)
@@ -473,16 +462,16 @@ tsdisplay(resid3)
 
 Residuals does not suggest a really good fit but, as said before, the best test performance are reached by the selected model.
 
-#### Baccala Vicentina
+### Baccala Vicentina
 
 To begin, we first transform the sales data of Baccalá Vicentina into a time series object:
 
-```{r message=FALSE, warning=FALSE}
+```{r ts_V, message=FALSE, warning=FALSE}
 ts_v <- ts(train$Baccala_Vicentina, start = c(2021, 01), frequency = 12)
 plot.ts(ts_v)
 ```
 
-```{r}
+```{r acf_pacf_analysis_baccala_vicentina_}
 tsdisplay(ts_v)
 Acf(ts_v, main = "ACF of Baccala Vicentina", col = "#FF7F7F", lwd = 2)
 Pacf(ts_v, main = "PACF of Baccala Vicentina", col = "#6BC3FF", lwd = 2)
@@ -490,7 +479,7 @@ Pacf(ts_v, main = "PACF of Baccala Vicentina", col = "#6BC3FF", lwd = 2)
 
 From the plot above we clearly notice the presence of seasonality that is confirmed by the pacf and acf functions with a significant spike at lag 12.
 
-```{r}
+```{r acf_pacf_analysis_baccala_vicentina}
 ts_v_12 <- diff(ts_v, lag = 12)
 tsdisplay(ts_v_12)
 Acf(ts_v_12, main = "ACF of Baccala Vicentina with Lag 12", col = "#FF7F7F", lwd = 2)
@@ -502,7 +491,7 @@ This suggests that a SARIMA model with a seasonal period s=12, accounting for mo
 Now, we will build a SARIMA model model that incorporate only a seasonal differencing with a period of 12.
 The parameter D=2 lead us to lower AIC but a bigger mse, this is a case of overfitting.
 
-```{r}
+```{r sarima_baccala_vicentina}
 auto_sarima_modelv <- auto.arima(ts_v)
 summary(auto_sarima_modelv)
 
@@ -511,7 +500,7 @@ sarima_model2v <- Arima(ts_v, order=c(0,0,0), seasonal=c(0,1,0))
 summary(sarima_model2v)
 ```
 
-```{r}
+```{r mse_sarima_baccala_vicentina}
 resid2 <- residuals(sarima_model2v)
 mse_train_sarimav <- mean(resid2^2)
 tsdisplay(resid2)
@@ -521,14 +510,14 @@ tsdisplay(resid2)
 
 The best model based on AIC is supposed to be the SARIMA(0,0,0)(0,1,0)[12].
 
-```{r}
+```{r mse_sarima_baccala_vicentina_}
 mse_test_sarimav <- mse(test$Baccala_Vicentina, forecast(sarima_model2v, h = length(y_testv))$mean)
 mse_test_sarimav
 ```
 
 Note: We also tried different configurations, expecially after we saw the residuals plot, where most of the values are inside the bandswith butfrom the ts plot their behaviou don't seems to be a random noise one; but at the end, this remain the best model. possible.
 
-```{r}
+```{r plot_sarima_baccala_vicentina}
 ggplot() +
   geom_line(aes(x = data$Date, y = data$Baccala_Vicentina, color = "Actual Values"), size = 1) +
   geom_line(aes(x = train$Date, y = fitted(sarima_model2v), color = "Fitted Values (Train)"), size = 1) +
@@ -548,27 +537,28 @@ ggplot() +
   theme(legend.position = "bottom")
 
 ```
-### ARMAX
+
+## ARMAX
 
 Now following the same reasoning of SARIMA models, we compare to them the same models but also using the fish consumption information as xreg, to see if it improves our results
 
-####Baccalà mantecato
+### Baccalà mantecato
 
-```{r}
+```{r ARMAX_baccala_mantecato}
 sarimax_model1m <- Arima(ts_m, order = c(1, 1, 0), seasonal = c(0, 1, 0), xreg = train$fish_cons)
 sarimax_model2m <- Arima(ts_m, order = c(0, 1, 1), seasonal = c(0, 1, 0), xreg = train$fish_cons)
 sarimax_model3m <- Arima(ts_m, order = c(0, 1, 0), seasonal = c(0, 1, 0), xreg = train$fish_cons)
 ```
 
 Once we have fitted the models, we compare them to the previous SARIMA considering the AIC as metric
-```{r}
+```{r AIC_comparison_baccala_mantecato}
 AIC(sarima_model1m, sarimax_model1m)
 AIC(sarima_model2m, sarimax_model2m)
 AIC(sarima_model3m, sarimax_model3m)
 ```
 
 It is clear that using the fish consumption data we improve the models, but as we've seen for SARIMAs, considering only AIC may not be enough, so now we also look at the MSEs
-```{r}
+```{r mse_comparison_baccala_mantecato}
 mse(test$Baccala_Mantecato, forecast(sarima_model1m, h = length(y_testm))$mean)
 mse(test$Baccala_Mantecato, forecast(sarimax_model1m, h = length(y_testm),xreg = test$fish_cons)$mean)
 
@@ -584,7 +574,7 @@ We see that in terms of MSE, SARIMAX brings to huge improvements for all 3 the c
 Following the same reasoning as before, and considering both the AIC and the MSE, among the models we select the ARMAX(0,1,0)(0,1,0)[12].
 
 Now we look at that model prediction on the test set compared to the respective original SARIMA
-```{r}
+```{r plot_sarimax_baccala_mantecato}
 ggplot() +
   geom_line(aes(x = data$Date, y = data$Baccala_Mantecato, color = "Actual Values"), size = 1) +
   geom_line(aes(x = test$Date, y = forecast(sarima_model3m, h = nrow(test))$mean, 
@@ -609,7 +599,7 @@ ggplot() +
 From the plot we clearly see the improvement obtained with the SARIMAX version, confirming that the fish_cons variable helps on predicting future orders quantity.
 
 Now we see the residuals 
-```{r}
+```{r residual_analysis_baccala_mantecato_}
 resid3_sarimax <- residuals(sarimax_model3m)
 mse_train_sarimaxm <- mean(resid3_sarimax^2)
 tsdisplay(resid3_sarimax, main="SARIMAX(0,1,0)(0,1,0)[12] Residuals for Baccala Mantecato")
@@ -619,9 +609,9 @@ tsdisplay(resid3_sarimax, main="SARIMAX(0,1,0)(0,1,0)[12] Residuals for Baccala 
 
 From the acf we have the doubt that we are missing an autoregressive component, but including it leads to lower performances on the test set, so we decide to accept that loss of information showed in the residuals to avoid overfitting.
 
-#### Baccala Vicentina
+### Baccala Vicentina
 Following the same approach, we try to study the effects of considering fish_cons on Baccala_vicentina and compare it to the previously selected SARIMA(0,1,1)(0,1,0)[12] model
-```{r}
+```{r sarimax_baccala_vicentina}
 sarimax_model2v <- Arima(ts_v, order = c(0, 1, 1), seasonal = c(0, 1, 0), xreg = train$fish_cons)
 
 AIC(sarima_model2v, sarimax_model2v)
@@ -632,7 +622,7 @@ mse_test_sarimaxv
 ```
 
 Surprisingly for the Baccala_Vicentina, the originally selected SARIMA model performs better than the SARIMAX one considering both AIC and MSE, so we discard it and select the original SARIMA.
-```{r}
+```{r plot_sarimax_baccala_vicentina}
 ggplot() +
   geom_line(aes(x = data$Date, y = data$Baccala_Vicentina, color = "Actual Values"), size = 1) +
   geom_line(aes(x = test$Date, y = forecast(sarima_model2v, h = nrow(test))$mean, 
@@ -659,12 +649,12 @@ As we can see from the plot, the 2 predictions are very similar but probably fis
 
 
 
-### Prophet Model
+## Prophet Model
 
-#### Baccala Mantecato
+### Baccala Mantecato
 We start by creating the dataset to give to the function prophet()
 
-```{r}
+```{r prop_m_}
 proph_md <- data.frame(
   ds = train[,"Date"],
   y = train[,"Baccala_Mantecato"]
@@ -674,7 +664,7 @@ proph_md$cap <- max(proph_md$y) * 1.1
 str(proph_md)
 ```
 
-```{r message=FALSE, warning=FALSE}
+```{r proph_M, message=FALSE, warning=FALSE}
 proph_logistic=prophet(proph_md,  growth="logistic", n.changepoints=5, 
            yearly.seasonality=TRUE, 
            seasonality.mode='multiplicative')
@@ -700,7 +690,7 @@ mse_test_prm
 ```
 
 Visualize the rpedictions below.
-```{r}
+```{r prediction_plot_proph_m}
 forecast_future$y_true <- data$Baccala_Mantecato
 forecast_future <- forecast_future[,c("yhat", "ds", "y_true")]
 
@@ -727,7 +717,7 @@ ggplot() +
 ```
 
 We observed the same staff of other models, the mse value (we will perfrom a final comparison between all the models) is high and looking at the plot, we are not able to fit well the function under the data.
-```{r}
+```{r resid_proph_m}
 res_proph <- train$Baccala_Mantecato - head(forecast_future$yhat, 38)
 mse_train_prm <- mean(res_proph^2)
 #checkresiduals(res_proph)
@@ -743,14 +733,11 @@ mse_train_prm1
 tsdisplay(res_proph1)
 
 mean((test$Baccala_Mantecato - (test_m$yhat + as.numeric(forecast(aar1, h=10)$mean)))^2)
-
 ```
 
-#### Baccala Vicentina
+### Baccala Vicentina
 
-```{r}
-library(prophet)
-
+```{r prop_V}
 proph_vd <- data.frame(
   ds = train[,"Date"],
   y = train[,"Baccala_Vicentina"]
@@ -760,7 +747,7 @@ proph_vd$cap <- max(proph_vd$y) * 1.1
 str(proph_vd)
 ```
 
-```{r message=FALSE, warning=FALSE}
+```{r proph_V, message=FALSE, warning=FALSE}
 proph_logistic=prophet(proph_vd,  growth="logistic", n.changepoints=5, 
            yearly.seasonality=TRUE, 
            seasonality.mode='multiplicative')
@@ -785,7 +772,7 @@ mse_test_prv <- mean((test$Baccala_Vicentina - test_v$yhat)^2)
 mse_test_prv
 ```
 
-```{r}
+```{r prediction_plot_proph_v}
 forecast_future$y_true <- data$Baccala_Vicentina
 forecast_future <- forecast_future[,c("yhat", "ds", "y_true")]
 
@@ -810,39 +797,38 @@ ggplot() +
   theme(legend.position = "bottom")
 ```
 
-```{r}
+```{r resid_proph_v}
 res_proph <- train$Baccala_Vicentina - head(forecast_future$yhat, 38)
 mse_train_prv <- mean(res_proph^2)
 checkresiduals(res_proph)
 ```
 
-### Exponential Smoothing Model
+## Exponential Smoothing Model
 
 We decide to try also an exponential smoothing model.
 
-#### Baccala Mantecato
+### Baccala Mantecato
 
 First we initialize a data frame to store the results of the models that we are going to test
-```{r}
+```{r init_results_m}
 results_m <- data.frame(
   Model = character(),
   MSE = numeric(),
   AIC = numeric(),
   stringsAsFactors = FALSE
 )
-```
-```{r}
 # Create the time series object for training
 train_series_m <- ts(train$Baccala_Mantecato, start = c(2021, 1), frequency = 12)
 ```
-ETS Model
+
+#### ETS Model
 First we try the classic ETS model
-```{r}
+```{r ETS_M}
 fit_ES_m <- ets(train_series_m)
 
 ```
 The ets() function fits an exponential smoothing model, automatically selecting the best configuration based on the data. 
-```{r}
+```{r ETS_M_FOR}
 forecast_ES_m <- forecast(fit_ES_m, h = length(y_testm))
 mse_ets_m <- mse(forecast_ES_m$mean,  y_testm)
 mse_ets_m_train <- mse(fitted(fit_ES_m), train$Baccala_Mantecato)
@@ -853,8 +839,8 @@ We obtained a MSE of 111.7995 and an AIC of 266.4093 wich are good results.
 So we decided to try to use the ETS model also with additive and multiplicative seasonality to 
 see if we can improve the results obtained with the classic ETS model.
 
-Holt-Winters Additive Seasonality (via ETS)
-```{r}
+#### Holt-Winters Additive Seasonality (via ETS)
+```{r HWA_M}
 fit_hw_add_m <- ets(train_series_m, model = "AAA")
 forecast_hw_add_m <- forecast(fit_hw_add_m, h = length(y_testm))
 mse_hw_add_m <- mse(forecast_hw_add_m$mean, y_testm)
@@ -863,8 +849,8 @@ results_m <- rbind(results_m, data.frame(Model = "Holt-Winters Additive", MSE = 
 ```
 The results are worse than the ETS model, with a MSE of 114.8030 and an AIC of 274.4056.
 
-Holt-Winters Multiplicative Seasonality (via ETS)
-```{r}
+#### Holt-Winters Multiplicative Seasonality (via ETS)
+```{r HWM_M}
 fit_hw_mult_m <- ets(train_series_m, model = "MAM")
 forecast_hw_mult_m <- forecast(fit_hw_mult_m, h = length(y_testm))
 mse_hw_mult_m <- mse(forecast_hw_mult_m$mean, y_testm)
@@ -872,13 +858,13 @@ aic_hw_mult_m <- AIC(fit_hw_mult_m)
 results_m <- rbind(results_m, data.frame(Model = "Holt-Winters Multiplicative", MSE = mse_hw_mult_m, AIC = aic_hw_mult_m))
 ```
 It''s appening the same as before, the results are worse than the ETS model, with a MSE of 177.2098 and an AIC of 274.7737.
-```{r}
+```{r print_results_m}
 # Print the results
 print(results_m)
 ```
 So as we can see from the table the best model for the Baccala Mantecato series is the ETS model, inlcuding additive and multiplicative seasonality
 doesn’t improve the results obtained with the classic ETS model so we decide to keep the one with the lowest MSE.
-```{r}
+```{r resid_ETS_M}
 tsdisplay(residuals(fit_ES_m), main = "Residuals of ETS Model")
 ```
 The residuals of the ETS model seems randomly scattered around 0, without any visible pattern.
@@ -891,7 +877,7 @@ In this case, most lags fall within the confidence intervals, indicating that th
 This is a good sign as it suggests the ETS model is adequately modeling the data without leaving behind systematic errors.
 
 Finally we plot the predicted values and the actual ones.
-```{r}
+```{r plot_ES_m}
 ggplot() +
   geom_line(aes(x = data$Date, y = data$Baccala_Mantecato, color = "Actual Values"), size = 1) +
   geom_line(aes(x = train$Date, y = fitted(fit_ES_m), color = "Train Fitted Values (ETS)"), size = 1) +
@@ -911,10 +897,10 @@ The Exponential Smoothing model is able to capture the underlying trends in the 
 
 
 
-#### Baccala Vicentina
+### Baccala Vicentina
 
 Now we do the same also for the Baccala Vicentina series
-```{r}
+```{r results_V}
 results_v <- data.frame(
   Model = character(),
   MSE = numeric(),
@@ -925,8 +911,8 @@ results_v <- data.frame(
 train_series_v <- ts(train$Baccala_Vicentina, start = c(2021, 1), frequency = 12)
 ```
 
-ETS Model
-```{r}
+#### ETS Model
+```{r ETS_V}
 fit_ES_v <- ets(train_series_v)
 forecast_ES_v <- forecast(fit_ES_v, h = length(y_testv))
 mse_ets_v <- mse(forecast_ES_v$mean, y_testv)
@@ -939,8 +925,8 @@ and these are already good results.
 However, we also try the ETS model with additive and multiplicative seasonality to see if we 
 can improve the already results.
 
-Holt-Winters Additive Seasonality (via ETS)
-```{r}
+#### Holt-Winters Additive Seasonality (via ETS)
+```{r HWA_V}
 fit_hw_add_v <- ets(train_series_v, model = "AAA")
 forecast_hw_add_v <- forecast(fit_hw_add_v, h = length(y_testv))
 mse_hw_add_v <- mse(forecast_hw_add_v$mean, y_testv)
@@ -950,8 +936,8 @@ results_v <- rbind(results_v, data.frame(Model = "Holt-Winters Additive", MSE = 
 
 Including additive seasonality doesn’t improve the results obtained with the classic ETS model, since the MSE is 1.512441 and the AIC is 111.4078.
 
-Holt-Winters Multiplicative Seasonality (via ETS)
-```{r}
+#### Holt-Winters Multiplicative Seasonality (via ETS)
+```{r HWM_V}
 fit_hw_mult_v <- ets(train_series_v, model = "MAM")
 forecast_hw_mult_v <- forecast(fit_hw_mult_v, h = length(y_testv))
 mse_hw_mult_v <- mse(forecast_hw_mult_v$mean, y_testv)
@@ -961,11 +947,11 @@ results_v <- rbind(results_v, data.frame(Model = "Holt-Winters Multiplicative", 
 ```
 
 Including multiplicative seasonality instead, slightly improve the obtained MSE reducing it to 1.434768, on the other hand it increases the AIC to 109.9921.
-```{r}
+```{r print_results_v}
 print(results_v)
 ```
 Since our goal is to minimize the MSE, we decide to keep the Holt-Winters with multiplicative seasonality which has the lowest MSE among the three models.
-```{r}
+```{r resid_HWM_V}
 tsdisplay(residuals(fit_hw_mult_v), main = "Residuals of Holt-Winters Multiplicative Seasonality Model")
 ```
 
@@ -976,7 +962,7 @@ The ACF and PACF for the residuals further confirm the randomness of the residua
 There are no significant spikes outside the confidence bands, suggesting that the residuals are uncorrelated and approximate white noise. 
 This validates the model''s performance and confirms that it has captured the key elements of the time series.
 
-```{r}
+```{r plot_HWM_V}
 ggplot() +
   geom_line(aes(x = data$Date, y = data$Baccala_Vicentina, color = "Actual Values"), size = 1) +
   geom_line(aes(x = train$Date, y = fitted(fit_hw_mult_v ), color = "Train Fitted Values (HWMS)"), size = 1) +
@@ -998,9 +984,9 @@ In the test period, the green line representing the predicted values shows a goo
 Some underestimations occur during sharp spikes in the data, but overall, the model provides reliable forecasts.
 
 
-## Results
+# Results
 
-```{r}
+```{r results}
 name_models <- c("Linear Regression", "SARIMA", "Prophet", "SARIMAX", "Exponential Smoothing")
 
 mse_train_m <- c(mse_train_lrm, mse_train_sarimam, mse_train_prm, mse_train_sarimaxm, mse_ets_m_train)
@@ -1012,21 +998,21 @@ mse_test_v <- c(mse_test_lrv, mse_test_sarimav, mse_test_prv, mse_test_sarimaxv,
 results <- data.frame(
   Model = name_models,
   
-  MSE_Train_Mantecato = mse_train_m,
-  MSE_Train_Vicentina = mse_train_v,
+  MSE_Train_M = mse_train_m,
+  MSE_Train_V = mse_train_v,
   
-  MSE_Test_Mantecato = mse_test_m,
-  MSE_Test_Vicentina = mse_test_v
+  MSE_Test_M = mse_test_m,
+  MSE_Test_V = mse_test_v
 )
-results
+kable(results, caption = "Results of the models on the training and test sets")
 ```
 
-```{r message=FALSE, warning=FALSE}
-plot_results(results, "MSE_Train_Mantecato")
-plot_results(results, "MSE_Test_Mantecato")
+```{r plot_results, message=FALSE, warning=FALSE}
+plot_results(results, "MSE_Train_M")
+plot_results(results, "MSE_Test_M")
 
-plot_results(results, "MSE_Train_Vicentina")
-plot_results(results, "MSE_Test_Vicentina")
+plot_results(results, "MSE_Train_V")
+plot_results(results, "MSE_Test_V")
 
 ```
 
