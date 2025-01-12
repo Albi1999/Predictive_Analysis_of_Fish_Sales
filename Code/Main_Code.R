@@ -14,6 +14,7 @@ library(lmtest)
 library(mgcv)
 library(forecast)
 library(lmtest)
+library(gam)
 
 source("Code/Functions_Utilies.R")
 
@@ -457,4 +458,358 @@ ggplot() +
   theme_minimal() +
   theme(legend.position = "bottom", text = element_text(size = 12))
 
+## ARMAX Model ----
 
+# Now following the same reasoning of SARIMA models, 
+# we compare to them the same models but also using the fish consumption information as xreg, 
+# to see if it improves our results
+
+### Baccalà mantecato ----
+
+sarimax_model1m <- Arima(ts_m, order = c(1, 1, 0), seasonal = c(0, 1, 0), xreg = train$fish_cons)
+sarimax_model2m <- Arima(ts_m, order = c(0, 1, 1), seasonal = c(0, 1, 0), xreg = train$fish_cons)
+sarimax_model3m <- Arima(ts_m, order = c(0, 1, 0), seasonal = c(0, 1, 0), xreg = train$fish_cons)
+
+# Once we have fitted the models, we compare them to the previous SARIMA considering the AIC as metric
+
+AIC(sarima_model1m, sarimax_model1m)
+AIC(sarima_model2m, sarimax_model2m)
+AIC(sarima_model3m, sarimax_model3m)
+
+# It is clear that using the fish consumption data we improve the models, but as we've seen for SARIMAs, 
+# considering only AIC may not be enough, so now we also look at the MSEs
+
+mse(test$Baccala_Mantecato, forecast(sarima_model1m, h = length(y_testm))$mean)
+mse(test$Baccala_Mantecato, forecast(sarimax_model1m, h = length(y_testm),xreg = test$fish_cons)$mean)
+
+mse(test$Baccala_Mantecato, forecast(sarima_model2m, h = length(y_testm))$mean)
+mse(test$Baccala_Mantecato, forecast(sarimax_model2m, h = length(y_testm),xreg = test$fish_cons)$mean)
+
+mse(test$Baccala_Mantecato, forecast(sarima_model3m, h = length(y_testm))$mean)
+mse(test$Baccala_Mantecato, forecast(sarimax_model3m, h = length(y_testm),xreg = test$fish_cons)$mean)
+
+# We see that in terms of MSE, SARIMAX brings to huge improvements for all 3 the considered models 
+# reducing the MSEs by approximately 50%. 
+# Following the same reasoning as before, and considering both the AIC and the MSE, 
+# among the models we select the ARMAX(0,1,0)(0,1,0)[12].
+
+# Now we look at that model prediction on the test set compared to the respective original SARIMA
+
+ggplot() +
+  geom_line(aes(x = data$Date, y = data$Baccala_Mantecato, color = "Actual Values"), size = 1) +
+  geom_line(aes(x = test$Date, y = forecast(sarima_model3m, h = nrow(test))$mean, 
+                color = "Predicted Values (Test) SARIMA"), size = 1) +
+  geom_line(aes(x = test$Date, y = forecast(sarimax_model3m, h = nrow(test), xreg = test$fish_cons)$mean, 
+                color = "Predicted Values (Test) SARIMAX"), size = 1) +
+  scale_color_manual(values = c("Actual Values" = "black", 
+                                "Predicted Values (Test) SARIMA" = "#6BC3FF",
+                                "Predicted Values (Test) SARIMAX" = "#FF7F7F"),
+                     labels = c("Actual Values", "Predicted Values (Test) SARIMA", "Predicted Values (Test) SARIMAX")) +
+  labs(
+    title = "Actual vs Predicted Values for Baccala Mantecato (SARIMA vs SARIMAX)",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+# From the plot we clearly see the improvement obtained with the SARIMAX version, 
+# confirming that the fish_cons variable helps on predicting future orders quantity.
+
+# Now we see the residuals 
+resid3_sarimax <- residuals(sarimax_model3m)
+Acf(resid3_sarimax, main = "ACF for SARIMAX Residuals of Baccala Mantecato", col = "#FF7F7F", lwd = 2)
+Pacf(resid3_sarimax, main = "PACF for SARIMAX Residuals of Baccala Mantecato", col = "#6BC3FF", lwd = 2)
+
+# From the acf we have the doubt that we are missing an autoregressive component, 
+# but including it leads to lower performances on the test set, so we decide to accept that loss 
+# of information showed in the residuals to avoid overfitting.
+
+### Baccala Vicentina ----
+# Following the same approach, we try to study the effects of considering fish_cons on Baccala_vicentina 
+# and compare it to the previously selected SARIMA(0,1,1)(0,1,0)[12] model
+
+sarimax_model2v <- Arima(ts_v, order = c(0, 1, 1), seasonal = c(0, 1, 0), xreg = train$fish_cons)
+
+AIC(sarima_model2v, sarimax_model2v)
+
+mse(test$Baccala_Vicentina, forecast(sarima_model2v, h = length(y_testv))$mean)
+mse(test$Baccala_Vicentina, forecast(sarimax_model2v, h = length(y_testv), xreg = test$fish_cons)$mean)
+
+# Surprisingly for the Baccala_Vicentina, the originally selected SARIMA model performs better than 
+# the SARIMAX one considering both AIC and MSE, so we discard it and select the original SARIMA.
+
+ggplot() +
+  geom_line(aes(x = data$Date, y = data$Baccala_Vicentina, color = "Actual Values"), size = 1) +
+  geom_line(aes(x = test$Date, y = forecast(sarima_model2v, h = nrow(test))$mean, 
+                color = "Predicted Values (Test) SARIMA"), size = 1) +
+  geom_line(aes(x = test$Date, y = forecast(sarimax_model2v, h = nrow(test), xreg = test$fish_cons)$mean, 
+                color = "Predicted Values (Test) SARIMAX"), size = 1) +
+  scale_color_manual(values = c("Actual Values" = "black", 
+                                "Predicted Values (Test) SARIMA" = "#6BC3FF",
+                                "Predicted Values (Test) SARIMAX" = "#FF7F7F"),
+                     labels = c("Actual Values", "Predicted Values (Test) SARIMA", "Predicted Values (Test) SARIMAX")) +
+  labs(
+    title = "Actual vs Predicted Values for Baccala Vicentina (SARIMA vs SARIMAX)",
+    x = "Date",
+    y = "Value",
+    color = "Legend"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+# As we can see from the plot, the 2 predictions are very similar but probably fish_cons and the 
+# peak that occurs every December except for the last one, which coincidentally is the test set, 
+# lead the SARIMAX model to overestimate the quantities sold, thus explaining the worse results in terms 
+# of AIC and MSE obtained earlier. So we confirm that for Baccala_Vicentina we discard the SARIMAX model.
+
+## GAM Models ----
+
+### Baccala Mantecato ----
+# Now we explore if we can benefit from non-linear models, in particular we try a GAM model and 
+# compare it with the Multiple Linear Regression selected model.
+# We start from the LR model
+
+g0 = gam(Baccala_Mantecato ~ trend + Month + fish_cons, data = train) #this is equivalent to lr_m
+
+# Now we plot the linear effects to see if they may require smoothing functions
+
+par(mfrow=c(1,2))
+plot(g0)
+
+# We clearly see a perfectly linear relation between the predictors and the response variable, 
+# this plots suggests to stop our non-linear analysis. 
+# To be sure we try anyway to include smoothing variables
+
+g1 <- gam(Baccala_Mantecato ~ s(trend, df=2) + Month + s(fish_cons, df=2), data = train)
+summary(g1)
+
+# Based on the df and on the 'Anova for Nonparametric Effects' results, where the nonparametric 
+# F-values for s(trend) and s(fish_cons) are not statistically significant 
+# (with p-values of 0.19369 and 0.07973 respectively), it is clear that these variables do not 
+# exhibit nonlinear relationships with the response variable as we initially expected.
+# Therefore, for reasons of parsimony, interpretability, and simplicity, we exclude the GAM model 
+# in favor of a straightforward multiple linear regression model, which aligns better with the data 
+# and offers more meaningful results.
+
+### Baccala Vicentina ----
+# Let's see if the same holds for Baccala_Vicentina.
+
+g0_v = gam(Baccala_Vicentina ~ trend + Month + fish_cons, data = train) #this is equivalent to lr_v_full 
+# (remember that the best one was lr_v (only Month as X))
+
+par(mfrow=c(1,2))
+plot(g0)
+
+# We clearly see that the behaviour of the explenatory variables is still linear. 
+# This suggests to keep the linear regression model, but we have also seen, in the section dedicated 
+# to linear regression, that for Baccala_Vicentina the best model was the reduced one obtained by 
+# considering only the Month variable as predictor. 
+# So we keep it.
+
+# This analysis clearly indicates that both results suggest against the use of models that fit 
+# nonlinear relationships, such as GAMs.
+
+
+## Exponential Smoothing Model ----
+
+### Baccala Mantecato ----
+
+# Initialize a data frame to store the results
+results <- data.frame(
+  Model = character(),
+  MSE = numeric(),
+  AIC = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# 1. ETS Model
+train_series <- ts(train_testm$y_train, start = c(2021, 1), frequency = 12)
+fit_ES <- ets(train_series)
+forecast_ES <- forecast(fit_ES, h = length(train_testm$y_test))
+mse_ets <- mse(forecast_ES$mean, train_testm$y_test)
+aic_ets <- AIC(fit_ES)
+results <- rbind(results, data.frame(Model = "ETS", MSE = mse_ets, AIC = aic_ets))
+
+# 2. Additive Seasonality (Holt-Winters via ETS)
+fit_hw_add <- ets(train_series, model = "AAA")
+forecast_hw_add <- forecast(fit_hw_add, h = length(train_testm$y_test))
+mse_hw_add <- mse(forecast_hw_add$mean, train_testm$y_test)
+aic_hw_add <- AIC(fit_hw_add)
+results <- rbind(results, data.frame(Model = "Holt-Winters Additive", MSE = mse_hw_add, AIC = aic_hw_add))
+
+# 3. Holt-Winters Multiplicative Seasonality (via ETS)
+fit_hw_mult <- ets(train_series, model = "MAM")
+forecast_hw_mult <- forecast(fit_hw_mult, h = length(train_testm$y_test))
+mse_hw_mult <- mse(forecast_hw_mult$mean, train_testm$y_test)
+aic_hw_mult <- AIC(fit_hw_mult)
+results <- rbind(results, data.frame(Model = "Holt-Winters Multiplicative", MSE = mse_hw_mult, AIC = aic_hw_mult))
+
+# 4. Regression + ETS Model
+fit_reg <- lm(y_train_m ~ trainm$Month + trainm$Year + trainm$fish_cons)
+residuals_reg <- residuals(fit_reg)
+fit_res_ets <- ets(residuals_reg)
+forecast_res_ets <- forecast(fit_res_ets, h = length(train_testm$y_test))
+mse_reg_ets <- mse(forecast_res_ets$mean, train_testm$y_test)
+aic_reg <- AIC(fit_reg)  # AIC for the regression model
+aic_res_ets <- AIC(fit_res_ets)  # AIC for the ETS model on residuals
+results <- rbind(results, data.frame(Model = "Regression + ETS", MSE = mse_reg_ets, AIC = aic_res_ets))
+
+# Print the results
+print(results)
+
+### Baccala Vicentina ----
+results <- data.frame(
+  Model = character(),
+  MSE = numeric(),
+  AIC = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# 1. ETS Model
+train_series_v <- ts(train_testv$y_train, start = c(2021, 1), frequency = 12)
+fit_ES_v <- ets(train_series_v)
+forecast_ES_v <- forecast(fit_ES_v, h = length(train_testv$y_test))
+mse_ets <- mse(forecast_ES_v$mean, train_testv$y_test)
+aic_ets <- AIC(fit_ES_v)
+results <- rbind(results, data.frame(Model = "ETS", MSE = mse_ets, AIC = aic_ets))
+
+# 2. Additive Seasonality (Holt-Winters via ETS)
+fit_hw_add_v <- ets(train_series_v, model = "AAA")
+forecast_hw_add_v <- forecast(fit_hw_add_v, h = length(train_testv$y_test))
+mse_hw_add <- mse(forecast_hw_add_v$mean, train_testv$y_test)
+aic_hw_add <- AIC(fit_hw_add_v)
+results <- rbind(results, data.frame(Model = "Holt-Winters Additive", MSE = mse_hw_add, AIC = aic_hw_add))
+
+# 3. Multiplicative Seasonality (Holt-Winters via ETS)
+fit_hw_mult_v <- ets(train_series_v, model = "MAM")
+forecast_hw_mult_v <- forecast(fit_hw_mult_v, h = length(train_testv$y_test))
+mse_hw_mult <- mse(forecast_hw_mult_v$mean, train_testv$y_test)
+aic_hw_mult <- AIC(fit_hw_mult_v)
+results <- rbind(results, data.frame(Model = "Holt-Winters Multiplicative", MSE = mse_hw_mult, AIC = aic_hw_mult))
+
+# 4. Regression + ETS Model
+fit_reg_v <- lm(Baccala_Vicentina ~ Month + Year + fish_cons, data = trainv)
+residuals_reg_v <- residuals(fit_reg_v)
+fit_res_ets_v <- ets(residuals_reg_v)
+forecast_res_ets_v <- forecast(fit_res_ets_v, h = length(train_testv$y_test))
+mse_reg_ets <- mse(forecast_res_ets_v$mean, train_testv$y_test)
+aic_reg_ets <- AIC(fit_res_ets_v)
+results <- rbind(results, data.frame(Model = "Regression + ETS", MSE = mse_reg_ets, AIC = aic_reg_ets))
+
+# Print the results
+print(results)
+
+
+## Local Regression ----
+
+### Baccala Mantecato ----
+
+# Ensure data_copy exists as a copy of your dataset
+data_copy <- data
+
+# Add a time index to the copied dataset
+data_copy$tt <- seq_len(nrow(data_copy))
+
+# Perform a chronological train-test split (90% train, 10% test)
+split_index <- floor(0.9 * nrow(data_copy))  # 90% split
+trainm <- data_copy[1:split_index, ]
+testm <- data_copy[(split_index + 1):nrow(data_copy), ]
+
+# Fit Loess Model on the training data only
+best_span <- 0.3  # Adjust span based on prior tuning
+fit_loess <- loess(Baccala_Mantecato ~ tt, data = trainm, span = best_span)
+
+# Generate Loess predictions for the training set
+trainm$loess_fitted <- predict(fit_loess)
+
+# Generate Loess predictions for the test set
+testm$loess_forecast <- predict(fit_loess, newdata = data.frame(tt = testm$tt))
+
+# Handle NA predictions for points outside the training range using a linear model
+na_indices <- is.na(testm$loess_forecast)
+if (any(na_indices)) {
+  linear_model <- lm(Baccala_Mantecato ~ tt, data = trainm)
+  testm$loess_forecast[na_indices] <- predict(linear_model, newdata = data.frame(tt = testm$tt[na_indices]))
+}
+
+# Combine train and test data into a single dataset for plotting
+plot_data <- bind_rows(
+  trainm %>% mutate(data_type = "Train Observed"),
+  testm %>% mutate(data_type = "Test Observed")
+)
+
+# Plot Results
+ggplot() +
+  geom_line(data = plot_data %>% filter(data_type == "Train Observed"),
+            aes(x = Date, y = Baccala_Mantecato, color = "Train Observed")) +
+  geom_line(data = plot_data %>% filter(data_type == "Test Observed"),
+            aes(x = Date, y = Baccala_Mantecato, color = "Test Observed")) +
+  geom_line(data = trainm, aes(x = Date, y = loess_fitted, color = "Loess Fitted")) +
+  scale_color_manual(values = c("Train Observed" = "#6BC3FF", 
+                                "Test Observed" = "#FF7F7F", 
+                                "Loess Fitted" = "#8FBC8F")) +
+  labs(title = "Loess Fit for Baccala Mantecato",
+       x = "Date", y = "Baccala Mantecato") +
+  theme_minimal()
+
+# Calculate MSE for Loess Fit on Test Data
+valid_forecast <- !is.na(testm$Baccala_Mantecato)
+loess_mse <- mean((testm$Baccala_Mantecato[valid_forecast] - testm$loess_forecast[valid_forecast])^2)
+cat(sprintf("Loess MSE on Test Data (Baccala Mantecato): %.5f\n", loess_mse))
+
+### Baccala Vicentina ----
+
+# Ensure data_copy exists as a copy of your dataset
+data_copy <- data
+
+# Add a time index to the copied dataset
+data_copy$tt <- seq_len(nrow(data_copy))
+
+# Perform a chronological train-test split (90% train, 10% test)
+split_index <- floor(0.9 * nrow(data_copy))  # 90% split
+trainv <- data_copy[1:split_index, ]
+testv <- data_copy[(split_index + 1):nrow(data_copy), ]
+
+# Fit Loess Model on the training data only
+best_span <- 0.3  # Adjust span based on prior tuning
+fit_loess <- loess(Baccala_Vicentina ~ tt, data = trainv, span = best_span)
+
+# Generate Loess predictions for the training set
+trainv$loess_fitted <- predict(fit_loess)
+
+# Generate Loess predictions for the test set
+testv$loess_forecast <- predict(fit_loess, newdata = data.frame(tt = testv$tt))
+
+# Handle NA predictions for points outside the training range using a linear model
+na_indices <- is.na(testv$loess_forecast)
+if (any(na_indices)) {
+  linear_model <- lm(Baccala_Vicentina ~ tt, data = trainv)
+  testv$loess_forecast[na_indices] <- predict(linear_model, newdata = data.frame(tt = testv$tt[na_indices]))
+}
+
+# Combine train and test data into a single dataset for plotting
+plot_data <- bind_rows(
+  trainv %>% mutate(data_type = "Train Observed"),
+  testv %>% mutate(data_type = "Test Observed")
+)
+
+# Plot Results
+ggplot() +
+  geom_line(data = plot_data %>% filter(data_type == "Train Observed"),
+            aes(x = Date, y = Baccala_Vicentina, color = "Train Observed")) +
+  geom_line(data = plot_data %>% filter(data_type == "Test Observed"),
+            aes(x = Date, y = Baccala_Vicentina, color = "Test Observed")) +
+  geom_line(data = trainv, aes(x = Date, y = loess_fitted, color = "Loess Fitted")) +
+  scale_color_manual(values = c("Train Observed" = "#6BC3FF", 
+                                "Test Observed" = "#FF7F7F", 
+                                "Loess Fitted" = "#8FBC8F")) +
+  labs(title = "Loess Fit for Baccala Vicentina",
+       x = "Date", y = "Baccala Vicentina") +
+  theme_minimal()
+
+# Calculate MSE for Loess Fit on Test Data
+valid_forecast <- !is.na(testv$Baccala_Vicentina)
+loess_mse <- mean((testv$Baccala_Vicentina[valid_forecast] - testv$loess_forecast[valid_forecast])^2)
+cat(sprintf("Loess MSE on Test Data (Baccala Vicentina): %.5f\n", loess_mse))
