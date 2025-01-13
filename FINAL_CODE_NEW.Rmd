@@ -1007,11 +1007,15 @@ To do so, we create a table with the MSE values for each model on the training a
 ```{r results}
 name_models <- c("Linear Regression", "SARIMA", "Prophet", "SARIMAX", "Exponential Smoothing")
 
-mse_train_m <- c(mse_train_lrm, mse_train_sarimam, mse_train_prm, mse_train_sarimaxm, mse_ets_m_train)
-mse_train_v <- c(mse_train_lrv, mse_train_sarimav, mse_train_prv, mse_train_sarimaxv, mse_hw_mult_v_train)
+mse_train_m <- c(mse_train_lrm, mse_train_sarimam, mse_train_prm, 
+                 mse_train_sarimaxm, mse_ets_m_train)
+mse_train_v <- c(mse_train_lrv, mse_train_sarimav, mse_train_prv, 
+                 mse_train_sarimaxv, mse_hw_mult_v_train)
 
-mse_test_m <- c(mse_test_lrm, mse_test_sarimam, mse_test_prm, mse_test_sarimaxm, mse_ets_m)
-mse_test_v <- c(mse_test_lrv, mse_test_sarimav, mse_test_prv, mse_test_sarimaxv, mse_hw_mult_v)
+mse_test_m <- c(mse_test_lrm, mse_test_sarimam, mse_test_prm, 
+                mse_test_sarimaxm, mse_ets_m)
+mse_test_v <- c(mse_test_lrv, mse_test_sarimav, mse_test_prv, 
+                mse_test_sarimaxv, mse_hw_mult_v)
 
 results <- data.frame(
   Model = name_models,
