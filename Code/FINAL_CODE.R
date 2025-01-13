@@ -850,6 +850,7 @@ This analysis clearly indicates that both results suggest against the use of mod
 
 ##Fino a qua Runna tutto FK
 
+
 ## Exponential Smoothing Model ----
 
 We decide to try also an exponential smoothing model, in particular we try the ETS model
