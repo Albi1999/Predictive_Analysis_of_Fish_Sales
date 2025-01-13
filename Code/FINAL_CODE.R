@@ -817,39 +817,37 @@ plot_results(results, "MSE_Test_Vicentina")
 Now we explore if we can benefit from non-linear models, in particular we try a GAM model and compare it with the Multiple Linear Regression selected model.
 We start from the LR model but allowing non-linear relationships between the predictors trend and fish_cons with the goal variable Baccala_Mantecato
 
-```{r}
+```{r, warning=FALSE}
 
 library(gam)
-g0 = gam(Baccala_Mantecato ~ s(trend) + Month + s(fish_cons), data = train) 
+g0 = gam(Baccala_Mantecato ~ s(trend) + Month +  s(fish_cons), data = train) 
 ```
 Now we plot the linear effects to see if they may require smoothing functions
 ```{r}
 par(mfrow=c(1,2))
 plot(g0, se=T)
 ```
-We clearly see a non-linear relation between the predictors and the response variable, this plots suggests investigate our non-linear analysis. To be sure of the statistical significance of that relationship, we look at the summary of the model
+We see a non-linear relation between the predictors and the response variable, this plots suggests investigate our non-linear analysis. To be sure of the statistical significance of that relationship, we look at the summary of the model
 ```{r}
 summary(g0)
 ```
-Based on the on the 'Anova for Nonparametric Effects' results, where the nonparametric F-values for s(trend) and s(fish_cons) are not statistically significant (with p-values of 0.19369 and 0.07973 respectively), it is clear that these variables do not exhibit significal non-linear relationships with the response variable. Therefore, for reasons of parsimony, interpretability, and simplicity, we exclude the GAM model in favor of a straightforward multiple linear regression model, which aligns better with the data and offers more meaningful results.
-```{r}
-#calcola MSE e AIC di questo gam e confronta con lr_m
 
-```
+Based on the 'Anova for Nonparametric Effects' results, where the nonparametric F-values for s(trend) and s(fish_cons) are not statistically significant (with p-values of 0.1708 and 0.3461 respectively), it is clear that these variables do not exhibit significal non-linear relationships with the response variable. Therefore, we exclude the GAM model in favor of a straightforward multiple linear regression model.
+
 
 ###Baccala Vicentina 
 Let's see if the same holds for Baccala_Vicentina.
 ```{r message=FALSE, warning=FALSE}
-g0_v = gam(Baccala_Vicentina ~ s(trend) + Month + s(fish_cons), data = train) #this is equivalent to lr_v_full (remember that the best one was lr_v (only Month as X))
+g0_v = gam(Baccala_Vicentina ~ s(trend) + Month + s(fish_cons), data = train)
 
 par(mfrow=c(1,2))
 plot(g0, se=T)
 ```
-we clearly see that the behaviour of the explenatory variables is non-linear. 
+we see that the behaviour of the explenatory variables is similar to the previous one. 
 This suggests to keep the linear regression model, but we have also seen, in the section dedicated to linear regression, that for Baccala_Vicentina the best model was the reduced one obtained by considering only the Month variable as predictor. 
-So we keep it. (tutto CAP)
+So we keep it.
 
-This analysis clearly indicates that both results suggest against the use of models that fit nonlinear relationships, such as GAMs.
+This analysis clearly indicates that both results suggest against the use of models that fit nonlinear relationships, such as GAMs, beacuse they do not significantly increase the model performances.
 
 ##Fino a qua Runna tutto FK
 
