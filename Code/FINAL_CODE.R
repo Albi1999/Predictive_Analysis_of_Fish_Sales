@@ -22,7 +22,7 @@ library(lmtest)
 ```
 
 ```{r SETWD, warning=FALSE}
-base_path <- "D:/Projects_GitHub/BEFD_Project" # Set base path
+base_path <- "C:/Users/flavi/OneDrive/Documenti/GitHub/BEFD_Project" # Set base path
 source(file.path(base_path, "Code/Functions_Utilies.R"))
 ```
 
@@ -542,7 +542,7 @@ mse(test$Baccala_Mantecato, forecast(sarimax_model3m, h = length(y_testm),xreg =
 
 ```
 We see that in terms of MSE, SARIMAX brings to huge improvements for all 3 the considered models reducing the MSEs by approximately 50%. 
-Following the same reasoning as before, and considering both the AIC and the MSE, among the models we select the ARMAX(0,1,0)(0,1,0)[12].
+Following the same reasoning as before, and considering both the AIC and the MSE, among the models we select the SARIMAX(0,1,0)(0,1,0)[12].
 
 Now we look at that model prediction on the test set compared to the respective original SARIMA
 ```{r}
@@ -579,7 +579,7 @@ From the acf we have the doubt that we are missing an autoregressive component, 
 
 #### Baccala Vicentina
 Following the same approach, we try to study the effects of considering fish_cons on Baccala_vicentina and compare it to the previously selected SARIMA(0,1,1)(0,1,0)[12] model
-```{r}
+```{r,warning=FALSE}
 sarimax_model2v <- Arima(ts_v, order = c(0, 1, 1), seasonal = c(0, 1, 0), xreg = train$fish_cons)
 
 AIC(sarima_model2v, sarimax_model2v)
@@ -815,36 +815,39 @@ plot_results(results, "MSE_Test_Vicentina")
 
 ### Baccala Mantecato
 Now we explore if we can benefit from non-linear models, in particular we try a GAM model and compare it with the Multiple Linear Regression selected model.
-We start from the LR model
+We start from the LR model but allowing non-linear relationships between the predictors trend and fish_cons with the goal variable Baccala_Mantecato
 
 ```{r}
 
 library(gam)
-g0 = gam(Baccala_Mantecato ~ trend + Month + fish_cons, data = train) #this is equivalent to lr_m
+g0 = gam(Baccala_Mantecato ~ s(trend) + Month + s(fish_cons), data = train) 
 ```
 Now we plot the linear effects to see if they may require smoothing functions
 ```{r}
 par(mfrow=c(1,2))
-plot(g0)
+plot(g0, se=T)
 ```
-We clearly see a perfectly linear relation between the predictors and the response variable, this plots suggests to stop our non-linear analysis. To be sure we try anyway to include smoothing variables
+We clearly see a non-linear relation between the predictors and the response variable, this plots suggests investigate our non-linear analysis. To be sure of the statistical significance of that relationship, we look at the summary of the model
 ```{r}
-g1 <- gam(Baccala_Mantecato ~ s(trend, df=2) + Month + s(fish_cons, df=2), data = train)
-summary(g1)
+summary(g0)
 ```
-Based on the df and on the 'Anova for Nonparametric Effects' results, where the nonparametric F-values for s(trend) and s(fish_cons) are not statistically significant (with p-values of 0.19369 and 0.07973 respectively), it is clear that these variables do not exhibit nonlinear relationships with the response variable as we initially expected. Therefore, for reasons of parsimony, interpretability, and simplicity, we exclude the GAM model in favor of a straightforward multiple linear regression model, which aligns better with the data and offers more meaningful results.
+Based on the on the 'Anova for Nonparametric Effects' results, where the nonparametric F-values for s(trend) and s(fish_cons) are not statistically significant (with p-values of 0.19369 and 0.07973 respectively), it is clear that these variables do not exhibit significal non-linear relationships with the response variable. Therefore, for reasons of parsimony, interpretability, and simplicity, we exclude the GAM model in favor of a straightforward multiple linear regression model, which aligns better with the data and offers more meaningful results.
+```{r}
+#calcola MSE e AIC di questo gam e confronta con lr_m
+
+```
 
 ###Baccala Vicentina 
 Let's see if the same holds for Baccala_Vicentina.
 ```{r message=FALSE, warning=FALSE}
-g0_v = gam(Baccala_Vicentina ~ trend + Month + fish_cons, data = train) #this is equivalent to lr_v_full (remember that the best one was lr_v (only Month as X))
+g0_v = gam(Baccala_Vicentina ~ s(trend) + Month + s(fish_cons), data = train) #this is equivalent to lr_v_full (remember that the best one was lr_v (only Month as X))
 
 par(mfrow=c(1,2))
-plot(g0)
+plot(g0, se=T)
 ```
-we clearly see that the behaviour of the explenatory variables is still linear. 
+we clearly see that the behaviour of the explenatory variables is non-linear. 
 This suggests to keep the linear regression model, but we have also seen, in the section dedicated to linear regression, that for Baccala_Vicentina the best model was the reduced one obtained by considering only the Month variable as predictor. 
-So we keep it.
+So we keep it. (tutto CAP)
 
 This analysis clearly indicates that both results suggest against the use of models that fit nonlinear relationships, such as GAMs.
 

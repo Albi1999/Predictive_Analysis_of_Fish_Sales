@@ -10,7 +10,7 @@ split_train_test <- function(data, name_y, prop) {
 plot_results = function(results, y_name) {
   ggplot(results, aes(x = Model, fill = "MSE")) +
     geom_bar(aes_string(y = y_name), stat = "identity", position = "dodge") +
-    scale_fill_manual(values = "#6E6E6E") +
+    scale_fill_manual(values = "#6BC3FF") +
     labs(title = paste("Comparison of", gsub("_", " ", y_name)), x = "Model", y = "MSE", fill = "Model") +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1),
