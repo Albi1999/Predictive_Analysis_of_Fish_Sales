@@ -24,7 +24,7 @@ This repository contains the work for a Business, Economic, and Financial Data (
 
 -   **`BEFD_Report.pdf`**: Final report detailing the analysis, methodology, and results.
 
--   **`FINAL_CODE_NEW.Rmd`**: RMarkdown file containing the complete workflow, from data processing to model evaluation and forecasting.
+-   **`FINAL_CODE.Rmd`**: RMarkdown file containing the complete workflow, from data processing to model evaluation and forecasting.
 
 -   **BEFD_Report:**
 
@@ -35,6 +35,8 @@ This repository contains the work for a Business, Economic, and Financial Data (
 -   **Code:**
 
     -   `Main_Code.R`: Main code for the project.
+    
+    -   `Functions_Utilies.R`: Utility functions for data processing and model evaluation.
 
 -   **Data:**
 

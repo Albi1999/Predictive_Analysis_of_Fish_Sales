@@ -357,7 +357,7 @@ print(mse_test_lrv)
 
 ### Baccala Mantecato
 Now we explore if we can benefit from non-linear models, in particular we try a GAM model and compare it with the Multiple Linear Regression selected model.
-We start from the LR model but allowing non-linear relationships between the predictors trend and fish_cons with the goal variable Baccala_Mantecato
+We start from the LR model but allowing non-linear relationships between the predictors trend and `fish_cons` with the goal variable Baccala_Mantecato
 
 ```{r, warning=FALSE}
 g0 = gam(Baccala_Mantecato ~ s(trend) + Month +  s(fish_cons), data = train) 
