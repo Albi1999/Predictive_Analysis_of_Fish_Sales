@@ -4,8 +4,6 @@
 
 This repository contains the work for a Business, Economic, and Financial Data (BEFD) course project. The project focuses on analyzing the time series data of Baccalà production in Treviso, Italy, using advanced statistical and machine learning methods to identify trends, seasonality, and optimize forecasting models.
 
-------------------------------------------------------------------------
-
 ## Objectives
 
 -   Explore and preprocess data on Baccalà Mantecato and Baccalà alla Vicentina sales.
@@ -20,20 +18,31 @@ This repository contains the work for a Business, Economic, and Financial Data (
     -   **Prophet Models**: Robust automatic seasonality detection and trend analysis.
 -   Evaluate model performance using metrics like Mean Squared Error (MSE) and visualize results to provide actionable insights for inventory management and production planning.
 
-------------------------------------------------------------------------
-
 ## Project Structure
 
 ### Files
 
 -   **`BEFD_Report.pdf`**: Final report detailing the analysis, methodology, and results.
--   **`FINAL_CODE_NEW.Rmd`**: RMarkdown file containing the complete workflow, from data processing to model evaluation and forecasting.
--   **Code:**
-    -   
--   **Data:**
-    -   **`Business_Notes.pdf`**: Notes and theoretical insights on time series modeling.
 
-------------------------------------------------------------------------
+-   **`FINAL_CODE_NEW.Rmd`**: RMarkdown file containing the complete workflow, from data processing to model evaluation and forecasting.
+
+-   **BEFD_Report:**
+
+    -   PlotsBEFD: Folder containing plots generated for the report.
+
+    -   `main.tex`: LaTeX file for the report.
+
+-   **Code:**
+
+    -   `Main_Code.R`: Main code for the project.
+
+-   **Data:**
+
+    -   `data.csv`: Raw data file containing monthly sales data for Baccalà Mantecato and Baccalà alla Vicentina.
+
+    -   `Fish_consumption_ita_raw.xlsx`: External data file containing fish consumption data.
+
+-   **`FINAL_CODE.html`**: HTML file containing the complete workflow, from data processing to model evaluation and forecasting.
 
 ## Key Features
 
@@ -63,8 +72,6 @@ This repository contains the work for a Business, Economic, and Financial Data (
 
 -   **Prophet:** Automatic seasonality detection and robust forecasting with changepoints.
 
-------------------------------------------------------------------------
-
 ## Instructions
 
 ### 1. **Setup**
@@ -87,57 +94,47 @@ install.packages(c("readxl", "forecast", "fpp2", "gam", "DIMORA", "prophet", "gb
 
 -   Knit the file to generate the HTML report.
 
--   Explore individual scripts for in-depth analysis of specific methods.
+-   Explore individual files for in-depth analysis of specific methods.
 
 ### 3. **Data**
 
-Ensure the required datasets are in the appropriate directories: - Example: `Lab/Data/` - Datasets used include: - Monthly sales data for Baccalà Mantecato and Baccalà alla Vicentina. - External data on salmon consumption as an explanatory variable.
-
-------------------------------------------------------------------------
+Ensure the required datasets are in the appropriate directories: - Example: `Data/` - `data.csv` - `Fish_consumption_ita_raw.xlsx`
 
 ## Results
 
 ### Performance Comparison
 
-| Model                 | Training MSE | Testing MSE |
-|-----------------------|--------------|-------------|
-| Linear Regression     | x.xxx        | x.xxx       |
-| SARIMA                | x.xxx        | x.xxx       |
-| SARIMAX               | x.xxx        | x.xxx       |
-| Exponential Smoothing | x.xxx        | x.xxx       |
-| Bass Model            | x.xxx        | x.xxx       |
-
+| Model   | Train_Mantecato | Train_Vicentina | Test_Mantecato | Test_Vicentina |
+|---------|-----------------|-----------------|----------------|----------------|
+| LR      | 6.7755          | 0.1879          | 45.5953        | 1.5124         |
+| SARIMA  | 29.7579         | 0.3605          | 104.5050       | 2.2650         |
+| SARIMAX | 14.2973         | 0.3683          | 64.0557        | 2.3494         |
+| ETS     | 13.2462         | 0.1936          | 111.7995       | 1.4348         |
+| Prophet | 9.2290          | 0.1130          | 119.0730       | 1.8423         |
 
 -   Full comparison and insights are detailed in the report.
 -   Visualizations highlight the model fit and prediction intervals.
 
-------------------------------------------------------------------------
-
 ## Contributions
 
 -   **Team Members:**
-    -   Flavio Kaci
-    -   Antonio Mattesco
-    -   Alberto Calabrese
-
-------------------------------------------------------------------------
+    -   [Flavio Kaci](https://github.com/Flavio1912)
+    -   [Antonio Mattesco](https://github.com/antnmttsc)
+    -   [Alberto Calabrese](https://github.com/Albi1999)
 
 ## License
 
 This project is licensed under the MIT License. See `LICENSE` for details.
 
-------------------------------------------------------------------------
-
 ## Acknowledgments
 
 -   Course: Business, Economic, and Financial Data (BEFD)
--   Instructor: Mariangela Guidolin
+-   Professor: Mariangela Guidolin
 -   University: University of Padua
 -   MCs: Data Science
+
 For further questions, feel free to open an issue or contact the contributors!
 
 </div>
 
-<p>
-  <img alt="R" src="https://img.shields.io/badge/R-276DC3?logo=r&logoColor=white&style=plastic" height="25"/>
-</p>
+<p><img src="https://img.shields.io/badge/R-276DC3?logo=r&amp;logoColor=white&amp;style=plastic" alt="R" height="25"/></p>
