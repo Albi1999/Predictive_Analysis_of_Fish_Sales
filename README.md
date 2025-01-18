@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repository contains the work for a Business, Economic, and Financial Data (BEFD) course project. The project focuses on analyzing the time series data of Baccalà production in Treviso, Italy, using advanced statistical and machine learning methods to identify trends, seasonality, and optimize forecasting models.
+This repository contains the work for a Business, Economic, and Financial Data (BEFD) course project. The project focuses on analyzing the time series data of Baccalà production in Treviso, Italy, using advanced statistical methods to identify trends, seasonality, and optimize forecasting models.
 
 ## Objectives
 
