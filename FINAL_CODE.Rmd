@@ -15,6 +15,7 @@ output:
     smooth_scroll: true
 ---
 
+# Packages
 ```{r load_libraries_configurations, message=FALSE, warning=FALSE}
 rm(list=ls())
 
@@ -1125,4 +1126,5 @@ plot_results(results, "MSE_Test_Vicentina")
 ```
 For Baccala Vicentina, Exponential Smoothing slightly outperforms the other models in the test phase. 
 So it should be the one selected for prediction tasks.
+
 
