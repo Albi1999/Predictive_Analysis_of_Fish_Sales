@@ -44,8 +44,6 @@ This repository contains the work for a Business, Economic, and Financial Data (
 
     -   `Fish_consumption_ita_raw.xlsx`: External data file containing fish consumption data.
 
--   **`FINAL_CODE.html`**: HTML file containing the complete workflow, from data processing to model evaluation and forecasting.
-
 ## Key Features
 
 ### 1. **Exploratory Data Analysis (EDA)**
@@ -81,7 +79,7 @@ This repository contains the work for a Business, Economic, and Financial Data (
 To run the analysis, you need the following dependencies installed:
 
 ``` r
-install.packages(c("readxl", "forecast", "fpp2", "gam", "DIMORA", "prophet", "gbm"))
+install.packages(c("readxl", "forecast", "fpp2", "gam", "DIMORA", "prophet", "gbm", "tidyverse"))
 ```
 
 ### 2. **Execution**
@@ -89,7 +87,7 @@ install.packages(c("readxl", "forecast", "fpp2", "gam", "DIMORA", "prophet", "gb
 -   Clone the repository:
 
     ``` bash
-    git clone https://github.com/Albi1999/Time_Series_Analysis_in_Treviso.git
+    git clone https://github.com/Albi1999/Predictive_Analysis_of_Fish_Sales.git
     ```
 
 -   Open the RMarkdown file (`FINAL_CODE_NEW.Rmd`) in RStudio.
