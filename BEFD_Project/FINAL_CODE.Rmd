@@ -15,7 +15,7 @@ output:
     smooth_scroll: true
 ---
 
-# Packages
+# Packages and Utilies
 ```{r load_libraries_configurations, message=FALSE, warning=FALSE}
 rm(list=ls())
 
