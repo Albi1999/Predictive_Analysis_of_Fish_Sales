@@ -20,7 +20,7 @@
 \begin{document}
 
 %%%%%%%%% TITLE
-\title{Business Economic and Financial Data Project}
+\title{Predictive Analysis of Baccalà Sales: Insights and Challenges for Arte Culinaria da Jhonny}
 
 \author{
 Flavio Kaci\\
@@ -38,46 +38,46 @@ Alberto Calabrese\\
 
 
 \section{Introduction}
-The culinary arts have always held a special place in the cultural and economic landscape of Italy, with each region offering its unique contributions to the nation’s gastronomic heritage. In Treviso, a city renowned for its historical charm and vibrant culinary traditions, one laboratory has distinguished itself through its artisanal approach to preparing delicacies for local gastronomy shops. Among its offerings, the signature dish—Baccalà—has become a hallmark of excellence and a key driver of demand. This report aims to delve into the time series data surrounding this iconic product, shedding light on its production and consumption patterns while exploring predictive insights.
 
-The analysis is rooted in data collected from the laboratory’s operations, focusing specifically on the production and supply metrics for Baccalà. These metrics are critical not only for optimizing internal processes but also for ensuring consistent supply to meet the expectations of gastronomy shops and, by extension, the customers they serve. By leveraging advanced statistical techniques and predictive modeling, the goal is to identify trends, seasonality, and potential anomalies in the data, thereby enabling the laboratory to make informed decisions regarding inventory management and resource allocation.
+The culinary arts have always played a significant role in Italy’s cultural and economic landscape, with each region contributing to the nation’s rich gastronomic heritage. In Treviso, renowned for its historic charm and vibrant culinary traditions, \textit{Arte Culinaria da Jhonny}, a family-run business based in Mignagola (TV) and owned by Flavio’s uncle, stands out for its artisanal approach to preparing delicacies for local gastronomy shops. Among its offerings, Baccalà has become a hallmark of excellence, driving demand and solidifying the laboratory’s position in the regional culinary scene. This report explores the time series data related to this iconic dish, analyzing production and consumption patterns for a single customer, a gastronomy near Treviso.
 
-A key objective of this report is to develop a robust short-term forecasting model. Accurate predictions are essential for maintaining the delicate balance between supply and demand, especially given the perishable nature of food products and the seasonal fluctuations that characterize the culinary industry. The predictive insights derived from this analysis will provide the laboratory with actionable intelligence, facilitating strategic planning and enhancing its capacity to respond proactively to market dynamics.
+The analysis leverages data from \textit{Arte Culinaria da Jhonny}, focusing on the production and supply of Baccalà, which are crucial for optimizing internal processes and ensuring consistent supply to gastronomy shops. By applying advanced statistical techniques and predictive modeling, we aim to identify key \textbf{trends}, \textbf{seasonality}, and \textbf{anomalies}, enabling the laboratory to make informed decisions about inventory management and resource allocation.
 
-In addition to its operational benefits, this analysis seeks to underscore the broader implications of data-driven decision-making within the food industry. By adopting a methodical approach to time series analysis, the laboratory not only strengthens its competitive position but also contributes to the sustainability of local gastronomy. This aligns with a growing emphasis on efficiency and resilience within the supply chain, particularly in an era marked by evolving consumer preferences and increasing awareness of food waste.
+Despite the challenges posed by a limited dataset, we have chosen to maintain the authenticity of the real-world data provided by \textit{Arte Culinaria da Jhonny}. Working with a small dataset and with just a few variables underscores the complexity of forecasting in a real operational context, where data scarcity is a common issue, yet accurate predictions remain crucial.
 
-Through this report, our aim is to combine the richness of tradition with the precision of modern analytics, providing a comprehensive understanding of the factors that influence the production and distribution of Baccalà in Treviso. By examining historical data and projecting future trends, we seek to equip the laboratory with the tools it needs to continue thriving in a competitive and ever-changing market.
+A central goal of this report is to develop a \textbf{short-term forecasting model} and give and provide the laboratory with \textbf{useful and actionable information} on how to improve and which data to monitor in the future. Predictions are vital for balancing supply and demand, especially given the perishable nature of food products and the seasonal fluctuations in the culinary industry.
+
+This analysis aligns with a growing focus on efficiency and resilience in supply chains, particularly in an era of evolving consumer preferences and heightened awareness of food waste.
 
 \section{Data}
 \subsection{Data Gathering}
-The data analyzed in this report were sourced from the archival records of the billing software utilized by the laboratory. This software has proven instrumental in compiling a comprehensive dataset on Baccalà sales, spanning a period from January $2021$ to December $2024$. The dataset consists of $48$ monthly observations, providing a robust foundation for time-series analysis.
+The data analyzed in this report were sourced from the archival records of the \textbf{billing software} utilized by the laboratory. This software has proven instrumental in compiling a comprehensive dataset on Baccalà sales, spanning a period from January $2021$ to December $2024$. The dataset consists of $48$ monthly observations, providing a robust foundation for time-series analysis.
 
 Each observation in the dataset is structured into three columns:
 \begin{itemize}
-    \item Date: Represents the specific month and year of the recorded sale.
-    \item Baccalà\_Mantecato: Indicates the quantity (in kg) of Baccalà Mantecato sold during the corresponding period.
-    \item Baccalà\_Vicentina: Indicates the quantity (in kg) of Baccalà alla Vicentina sold during the corresponding period.
+    \item \textbf{Date}: Represents the specific month and year of the recorded sale.
+    \item \textbf{Baccalà\_Mantecato}: Indicates the quantity (in kg) of Baccalà Mantecato sold during the corresponding period.
+    \item \textbf{Baccalà\_Vicentina}: Indicates the quantity (in kg) of Baccalà alla Vicentina sold during the corresponding period.
 \end{itemize}
 
 
-This dataset offers valuable information on the dynamics of Baccalà production and consumption, allowing the identification of patterns and trends that can inform strategic decision making. By examining these variables over time, we aim to uncover the underlying factors influencing demand and develop predictive models to improve operational efficiency.
+This dataset offers valuable information on the dynamics of Baccalà production and consumption, allowing the identification of patterns and trends that can inform \textbf{strategic decision making}. By examining these variables over time, we aim to uncover the underlying factors influencing demand and develop predictive models to \textbf{improve operational efficiency}.
 
 \subsection{Data Preprocessing}
-To ensure the data was ready for analysis, several preprocessing steps were undertaken. Firstly, the "Date" column was converted into an appropriate date format, allowing for accurate temporal analysis. Additional features such as "Month" and "Year" were derived from the "Date" column to facilitate the identification of seasonal trends and interannual variations. A trend variable was also introduced to capture the temporal progression of the dataset.
+To ensure the data was ready for analysis, several \textbf{preprocessing} steps were undertaken. Firstly, the "Date" column was converted into an appropriate date format, allowing for accurate temporal analysis. Additional features such as "\textbf{Month}" and "\textbf{Year}" were derived from the "\textbf{Date}" column to facilitate the identification of seasonal trends and interannual variations. A \textbf{trend} variable was also introduced to capture the temporal progression of the dataset.
 
-Missing values were checked and confirmed to be absent, ensuring the dataset's integrity. Alongside the primary dataset, an external dataset containing information on salmon consumption in Italy was integrated. This dataset, sourced from \href{https://eumofa.eu/first-sale-weekly-data}{EUMOFA}, provided monthly observations on salmon sales, starting from January $2009$. The inclusion of this dataset was motivated by its potential to serve as an explanatory variable in modeling Baccalà sales.
+Missing values were checked and confirmed to be absent, ensuring the dataset's integrity. Alongside the primary dataset, an external dataset containing information on salmon consumption in Italy was integrated. This dataset, sourced from \href{https://eumofa.eu/first-sale-weekly-data}{EUMOFA}, provided monthly observations on salmon sales, starting from January $2009$. The inclusion of this dataset was motivated by its potential to serve as an \textbf{explanatory variable} in modeling Baccalà sales. 
 
 The salmon dataset included three key variables:
-
-Date: The month and year of salmon consumption, starting from November $2020$. A two-month lag was applied to align with future forecasting scenarios.
 \begin{itemize}
-    \item kg\_std: The standardized quantity of salmon consumed (in kilograms), used to simplify comparative analysis.
-    \item kg: The raw quantity of salmon consumed (in kilograms).
+    \item \textbf{Date}: The month and year of salmon consumption, starting from November $2020$. A two-month lag was applied to align with future forecasting scenarios.
+    \item \textbf{kg\_std}: The standardized quantity of salmon consumed (in kilograms), used to simplify comparative analysis.
+    \item \textbf{kg}: The raw quantity of salmon consumed (in kilograms).
 \end{itemize}
 
-These data were aggregated and aligned with the Baccalà dataset to ensure temporal consistency and compatibility. While other external variables, such as the NIC for fish products and production prices sourced from Istat, were initially considered, they were excluded due to their lack of statistical significance or mismatched temporal resolution.
+These data were aggregated and aligned with the Baccalà dataset to ensure \textbf{temporal consistency} and \textbf{compatibility}. While other external variables, such as the NIC for fish products and production prices sourced from Istat, were initially considered, they were excluded due to their lack of statistical significance or mismatched temporal resolution.
 
-The combined dataset now offers a comprehensive view of Baccalà sales alongside relevant external factors, setting the stage for robust time series analysis and predictive modeling.
+The combined dataset now offers a comprehensive view of Baccalà sales alongside relevant external factors, setting the stage for robust time series analysis and predictive modeling. 
 
 The resulting dataset (Tab.~\ref{table:resulting_dataset}), looks like:
 \begin{table}[h!]
@@ -106,7 +106,7 @@ The resulting dataset (Tab.~\ref{table:resulting_dataset}), looks like:
     \label{fig:SS_MAN_VIC}
 \end{figure}
 
-The exploratory phase of the analysis begins with visualizing the time series data for Baccalà Mantecato and Baccalà Vicentina. This visualization (Fig.~\ref{fig:SS_MAN_VIC}) provides a comparative view of the monthly sales trends for both products. Notably, the sales quantities of Baccalà Mantecato consistently exceed those of Baccalà Vicentina across all observed periods. Furthermore, Baccalà Mantecato demonstrates greater variability in sales, with a wider range of values, while Baccalà Vicentina exhibits a more stable pattern. Both products, however, show a pronounced increase in sales during the final months of each year, particularly in December.
+The exploratory phase of the analysis begins with visualizing the time series data for Baccalà Mantecato and Baccalà Vicentina. This visualization (Fig.~\ref{fig:SS_MAN_VIC}) provides a comparative view of the monthly sales trends for both products. Notably, the sales quantities of Baccalà Mantecato consistently exceed those of Baccalà Vicentina across all observed periods. Furthermore, \textbf{Baccalà Mantecato} demonstrates greater \textbf{variability in sales}, with a wider range of values, while \textbf{Baccalà Vicentina} exhibits a \textbf{more stable pattern}. Both products, however, show a pronounced \textbf{increase in sales} during the final months of each year, particularly in December.
 
 To further explore yearly patterns, separate time series plots grouped by year were created for each product (Fig.~\ref{fig:Month_SS_MAN_VIC}). These plots reveal consistent seasonal trends, with sales peaking in the latter months of the year, particularly in September and December. For Baccalà Mantecato, the data also suggest a shift over time: during the first year ($2021$), sales volumes in off-peak months were generally higher compared to subsequent years, while peak-month sales have increased in recent periods.
 
@@ -117,7 +117,7 @@ To further explore yearly patterns, separate time series plots grouped by year w
     \label{fig:Month_SS_MAN_VIC}
 \end{figure}
 
-The autocorrelation functions (ACF) of the time series were analyzed to examine the presence of seasonality and lagged relationships (Fig.~\ref{fig:ACF_MAN}, Fig.~\ref{fig:ACF_VIC}).
+The \textbf{autocorrelation functions} (ACF) of the time series were analyzed to examine the presence of seasonality and lagged relationships (Fig.~\ref{fig:ACF_MAN}, Fig.~\ref{fig:ACF_VIC}).
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.5\textwidth]{PlotsBEFD/ACF_MAN.png} 
@@ -131,24 +131,23 @@ The autocorrelation functions (ACF) of the time series were analyzed to examine 
     \label{fig:ACF_VIC}
 \end{figure}
 
-Most autocorrelations fall within the confidence bands, indicating an absence of significant correlation for most lags. However, the sinusoidal pattern observed within the bands suggests periodic fluctuations, with a notable peak at lag $12$, supporting the hypothesis of annual seasonality. This periodic effect will be further evaluated by analyzing the residuals of future forecasting models to confirm or refute the presence of seasonality.
+Most autocorrelations fall within the confidence bands, indicating an absence of significant correlation for most lags. However, the sinusoidal pattern observed within the bands suggests periodic fluctuations, with a notable peak at lag $12$, supporting the hypothesis of \textbf{annual seasonality}. This periodic effect will be further evaluated by analyzing the residuals of future forecasting models to confirm or refute the presence of seasonality.
 
-The insights gained from this exploratory analysis lay the groundwork for constructing robust predictive models that incorporate both seasonal and trend components. These models aim to enhance the laboratory's ability to forecast sales and optimize inventory management, ultimately contributing to its operational efficiency and market responsiveness.
+The insights gained from this exploratory analysis lay the groundwork for constructing robust predictive models that incorporate both seasonal and trend components. These models aim to enhance the laboratory's ability to \textbf{forecast sales} and \textbf{optimize inventory management}, ultimately contributing to its operational efficiency and market responsiveness.
 
 \section{Train-Test Split}
-To evaluate the predictive performance of forecasting models, the dataset was divided into training and testing subsets.
+To evaluate the predictive performance of forecasting models, the dataset was divided into \textbf{training} and \textbf{testing} subsets.
 
-The training set includes observations from the initial $80$\% of the time periods, while the test set consists of the final $20$\%. By design, this approach preserves the temporal structure of the data, preventing data leakage and ensuring that predictions are based solely on prior information.
+The \textbf{training set} includes observations from the initial $80$\% of the time periods, while the \textbf{test set} consists of the final $20$\%. By design, this approach preserves the temporal structure of the data, preventing data leakage and ensuring that predictions are based solely on prior information.
 
-For visualization purposes, the split was applied to both Baccalà Mantecato and Baccalà Vicentina. Two distinct plots (Fig.~\ref{fig:TRAIN_TEST_MAN}, Fig.~\ref{fig:TRAIN_TEST_VIC}) illustrate the separation between training and testing data for each product. These plots reveal the temporal trends in sales, highlighting the segments used for model training and evaluation.
-
-\begin{figure}[H]
+For visualization purposes, the split was applied to both Baccalà Mantecato and Baccalà Vicentina. Two distinct plots (Fig.~\ref{fig:TRAIN_TEST_MAN}, Fig.~\ref{fig:TRAIN_TEST_VIC}) illustrate the separation between training and testing data for each product. These plots reveal the \textbf{temporal trends in sales}, highlighting the segments used for model training and evaluation.
+\begin{figure}[h!]
     \centering
     \includegraphics[width=0.5\textwidth]{PlotsBEFD/TRAIN_TEST_MAN.png} 
     \caption{}
     \label{fig:TRAIN_TEST_MAN}
 \end{figure}
-Baccalà Mantecato (Fig.~\ref{fig:TRAIN_TEST_MAN}): The training data (in blue) exhibits the characteristic variability and seasonal trends observed in the explanatory analysis. The testing data (in red) includes more recent observations, capturing the peak sales period in September.
+Baccalà Mantecato (Fig.~\ref{fig:TRAIN_TEST_MAN}): The \textbf{training data} (in blue) exhibits the characteristic variability and seasonal trends observed in the explanatory analysis. The \textbf{testing data} (in red) includes more recent observations, capturing the peak sales period in September.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.5\textwidth]{PlotsBEFD/TRAIN_TEST_VIC.png} 
@@ -160,14 +159,14 @@ Baccalà Vicentina (Fig.~\ref{fig:TRAIN_TEST_VIC}): Similarly, the training data
 Notably, in $2024$, the peak sales for Baccalà occurred in September rather than December, deviating from historical patterns. This anomaly may present challenges for forecasting models, as it represents a shift in seasonal behavior for both the variants.
 
 By implementing this train-test split, the analysis sets the stage for rigorous model development and validation. 
-%%The observed deviations in 2024 underscore the importance of incorporating mechanisms to handle potential anomalies and shifts in seasonal trends, ensuring robust and reliable predictions. LA RIMUOVERI PERCHE NOI QUESTA CHALLENGE NON LA AFFRONTIAMO, NE SIAMO SOLO PENALIZZATI
+
 
 \section{Modelling}
 \subsection{Linear Regression Models}
-The modeling phase began with the development of linear regression models for both Baccalà Mantecato and Baccalà Vicentina. Each variant required a distinct approach due to their different underlying patterns and relationships with predictor variables.
+The modeling phase began with the development of \textbf{linear regression models} for both Baccalà Mantecato and Baccalà Vicentina. Each variant required a distinct approach due to their different underlying patterns and relationships with predictor variables.
 
 \subsubsection{Model for Baccalà Mantecato}
-For Baccalà Mantecato, the initial model incorporated three key predictors: a trend variable, monthly seasonality indicators, and fish consumption data. The model demonstrated strong explanatory power, with an $R^2$ value of $0.9178$, indicating that approximately $91.78$\% of the variability in Baccalà Mantecato sales could be explained by these predictors.
+For Baccalà Mantecato, the initial model incorporated three key predictors: a \textbf{trend} variable, \textbf{monthly seasonality} indicators, and \textbf{fish consumption} data. The model demonstrated strong explanatory power, with an $R^2$ value of $0.9178$, indicating that approximately $91.78$\% of the variability in Baccalà Mantecato sales could be explained by these predictors.
 
 \begin{figure}[H]
     \centering
@@ -178,9 +177,10 @@ For Baccalà Mantecato, the initial model incorporated three key predictors: a t
 
 Analysis of the coefficients revealed several important relationships:
 
-The trend variable showed a positive coefficient of $0.18$, suggesting that, ceteris paribus, Baccalà Mantecato sales increase by $0.18$ units per time period.
-Fish consumption demonstrated a strong positive relationship with a coefficient of $7.79$, indicating that for each unit increase in fish consumption, Baccalà Mantecato sales rise by approximately $7.79$ kg. For example, if fish consumption in Italy increases by one unit in October $2021$, the quantity sold in December $2021$ would increase by $7.79$ kg, assuming all other variables remain constant
-The monthly indicators captured significant seasonal effects, with December showing a substantial positive impact and months like February and October displaying negative coefficients relative to the January baseline.
+The \textbf{trend} variable showed a positive coefficient of $0.18$, suggesting that, ceteris paribus, Baccalà Mantecato sales increase by $0.18$ units per time period.
+
+\textbf{Fish consumption} demonstrated a strong positive relationship with a coefficient of $7.79$, indicating that for each unit increase in fish consumption, Baccalà Mantecato sales rise by approximately $7.79$ kg. For example, if fish consumption in Italy increases by one unit in October $2021$, the quantity sold in December $2021$ would increase by $7.79$ kg, assuming all other variables remain constant.
+The \textbf{monthly} indicators captured significant seasonal effects, with December showing a substantial positive impact and months like February and October displaying negative coefficients relative to the January baseline.
 
 Model selection was performed by systematically removing variables and comparing performance metrics ($AIC$ and adjusted $R^2$) across different specifications:
 \begin{itemize}[noitemsep, topsep=0pt]
@@ -189,7 +189,7 @@ Model selection was performed by systematically removing variables and comparing
     \item Model with monthly seasonality and fish consumption only
     \item Full model with all predictors
 \end{itemize}
-The comparative analysis confirmed that the full model, incorporating all predictors, provided the best fit according to both $AIC$ and adjusted $R^2$ criteria.
+The comparative analysis confirmed that the \textbf{full model}, incorporating all predictors, provided the \textbf{best fit} according to both $AIC$ and adjusted $R^2$ criteria.
 
 \begin{figure}[H]
     \centering
@@ -198,42 +198,41 @@ The comparative analysis confirmed that the full model, incorporating all predic
     \label{fig:RES_LR_MAN}
 \end{figure}
 
-Residual analysis (Fig.~\ref{fig:RES_LR_MAN}) revealed no concerning patterns, with residuals appearing randomly scattered, suggesting that the model's assumptions of linearity, constant variance, and independence were reasonably satisfied. The Durbin-Watson test for autocorrelation yielded a $P\_value$ below $0.05$, supporting the null hypothesis that the residuals' autocorrelation is $zero$.
-
+Residual analysis (Fig.~\ref{fig:RES_LR_MAN}) revealed patterns and peaks out of the bounds with the \textbf{Durbin-Watson test} that indicates the presence of autocorrelation in the residuals. While we attempted to address this by fitting a linear regression model with ARIMA errors, this approach resulted in \textbf{overfitting}.
 
 \subsubsection{Model for Baccalà Vicentina}
-The modeling approach for Baccalà Vicentina followed a similar initial framework but led to different conclusions. The initial full model included the same three predictors: trend, monthly seasonality, and fish consumption. However, the analysis revealed that fish consumption did not significantly contribute to the model's performance.
+The modeling approach for Baccalà Vicentina followed a similar initial framework but led to different conclusions. The initial full model included the same three predictors: \textbf{trend}, \textbf{monthly seasonality}, and \textbf{fish consumption}. However, the analysis revealed that fish consumption did not significantly contribute to the model's performance.
 Through iterative model refinement:
 
 Fish consumption was removed, leading to an improvement in adjusted $R^2$ from $0.8261$ to $0.8305$.
 The trend variable was subsequently eliminated due to its high p-value.
-The final model retained only monthly seasonality indicators
+The \textbf{final model} retained only \textbf{monthly seasonality} indicators
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.5\textwidth]{PlotsBEFD/PRED_LR_VIC.png} 
     \caption{}
     \label{fig:PRED_LR_VIC}
 \end{figure}
-The simplified model demonstrated strong statistical significance with an F-statistic of 18.21 (p-value = $1.684e-09$). This suggests that variations in Baccalà Vicentina sales are primarily driven by seasonal effects, without significant influence from trend or fish consumption patterns.
-Comparison of model performance metrics confirmed the superiority of the seasonality-only model over the full specification, with improved $AIC$ and adjusted $R^2$ values. 
+The simplified model demonstrated strong statistical significance with an \textbf{F-statistic} of $18.21$ (p-value = $1.684e-09$). This suggests that variations in Baccalà Vicentina sales are primarily driven by seasonal effects, without significant influence from trend or fish consumption patterns.
+Comparison of model performance metrics confirmed the superiority of the \textbf{seasonality-only} model over the full specification, with improved $AIC$ and adjusted $R^2$ values. 
 \newline
 The analysis of the historical sales data for Baccalà Vicentina in kilograms reveals notable seasonal effects. December shows a significant positive impact on sales ($+2.975$), likely driven by higher demand during the holiday season. In contrast, October ($-1.558$) and February ($-1.250$) exhibit substantial declines compared to January. Additionally, August records a notable decrease ($-1.092$), potentially reflecting lower summer demand. These results highlight clear seasonal patterns in sales trends.
 \newline
-Residual analysis (Fig.~\ref{fig:RES_LR_VIC}) showed a problematic scatter, indicating problematic model fit. 
+Residuals (Fig.~\ref{fig:RES_LR_VIC}) appear randomly scattered:
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.5\textwidth]{PlotsBEFD/RES_LR_VIC.png} 
     \caption{}
     \label{fig:RES_LR_VIC}
 \end{figure}
-This idea is confirmed by the Durbin-Watson test, which suggested the presence of some autocorrelation in the residuals, as indicated by a p-value ($0.18$) exceeding the $0.05$ significance level.
+This idea is confirmed by the \textbf{Durbin-Watson test} with a p-value ($0.18$) exceeding the $0.05$ significance level.
 The distinct modeling outcomes for the two variants highlight the importance of tailored approaches in time series analysis, as similar products may exhibit different underlying patterns and relationships with predictor variables.
 
 \subsection{SARIMA Models}
-Following the linear regression analysis, we explored various time series models for both variants of Baccalà. Initial attempts with ARMA and ARIMA models showed poor performance due to the pronounced seasonal patterns in the data. This led us to focus on Seasonal Autoregressive Integrated Moving Average (SARIMA) models, which explicitly account for seasonality in the time series.
+Following the linear regression analysis, we explored various time series models for both variants of Baccalà. Initial attempts with ARMA and ARIMA models showed poor performance due to the pronounced seasonal patterns in the data. This led us to focus on \textbf{Seasonal Autoregressive Integrated Moving Average} (SARIMA) models, which explicitly account for seasonality in the time series.
 
 \subsubsection{Model for Baccalà Mantecato}
-Initial analysis of the Baccalà Mantecato time series confirmed the presence of both trend and seasonal components identified in the regression analysis. After transforming the data into a time series object, we examined the autocorrelation ($ACF$) and partial autocorrelation ($PACF$) functions of the first-differenced series. 
+Initial analysis of the Baccalà Mantecato time series confirmed the presence of both trend and seasonal components identified in the regression analysis. After transforming the data into a time series object, we examined the \textbf{autocorrelation} ($ACF$) and \textbf{partial autocorrelation} ($PACF$) functions of the first-differenced series. 
 
 \begin{figure}[H]
     \centering
@@ -242,7 +241,7 @@ Initial analysis of the Baccalà Mantecato time series confirmed the presence of
     \label{fig:ACF_MAN_LAG1}
 \end{figure}
 
-Both $ACF$ and $PACF$ plots (Fig.~\ref{fig:ACF_MAN_LAG1}) revealed a distinctive sinusoidal pattern, with values generally within the confidence bands except for a significant spike at lag $12$, strongly suggesting annual seasonality in the data.
+Both $ACF$ and $PACF$ plots (Fig.~\ref{fig:ACF_MAN_LAG1}) revealed a distinctive sinusoidal pattern, with values generally within the confidence bands except for a significant spike at lag $12$, strongly suggesting \textbf{annual seasonality in the data}.
 To address these patterns, three SARIMA models were evaluated:
 \begin{itemize}[noitemsep, topsep=0pt]
     \item \textbf{SARIMA(1,1,0)(0,1,0)[12]}: Includes non-seasonal differencing ($d=1$), one autoregressive term, and seasonal differencing.
@@ -250,19 +249,24 @@ To address these patterns, three SARIMA models were evaluated:
     \item \textbf{SARIMA(0,1,0)(0,1,0)[12]}: Uses only differencing components.
 \end{itemize}
 
-While the $SARIMA(0,1,1)(0,1,0)[12]$ model showed the lowest $AIC$ value, suggesting better in-sample fit, evaluation on the test set revealed that the simpler $SARIMA(0,1,0)(0,1,0)[12]$ model achieved superior out-of-sample performance with lower Mean Squared Error ($MSE$). This finding highlights the importance of model parsimony and the potential risks of overfitting.
-Analysis of the residuals for the selected model (Fig.~\ref{fig:RES_ACF_SARIMA_MAN}) showed some patterns that suggest the fit isn't perfect.
+While the $SARIMA(0,1,1)(0,1,0)[12]$ model showed the lowest $AIC$ value, suggesting better in-sample fit, evaluation on the test set revealed that the simpler $SARIMA(0,1,0)(0,1,0)[12]$ model achieved \textbf{superior out-of-sample performance} with lower \textbf{Mean Squared Error} ($MSE$). This finding highlights the importance of model parsimony and the potential risks of \textbf{overfitting}.
+Anyway a $SARIMA(0,1,0)(0,1,0)[12]$ is a model that only applies differences in trend and seasonality, such that the equation becames $(1-B)(1-B^{12})Y_t = \epsilon_t$. 
+Once the first difference, \( (1-B)Y_t \), and the seasonal difference, \( (1-B^{12})Y_t \), are applied, the resulting process is governed solely by the random error term \( \epsilon_t \). In other words: the application of the first difference removes the trend component while the application of the seasonal difference removes periodic components associated with annual seasonality (e.g., with periodicity \( s=12 \) for monthly data).
+After these transformations, the series essentially becomes white noise: $\epsilon_t \sim WN(0, \sigma^2)$
+where \( WN \) represents white noise with zero mean and constant variance \( \sigma^2 \).
+Analysis of the residuals for the selected model (Fig.~\ref{fig:RES_ACF_SARIMA_MAN}) showed some patterns that suggest the fit isn't satisfying.
+\vspace{-0.4cm}  % reduce vertical space
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.5\textwidth]{PlotsBEFD/RES_ACF_SARIMA_MAN.png} 
     \caption{}
     \label{fig:RES_ACF_SARIMA_MAN}
 \end{figure}
-
+\vspace{-0.3cm}  % reduce vertical space
 However, given its superior test set performance, this model was retained as the final specification for Baccalà Mantecato.
 
 \subsubsection{Model for Baccalà Vicentina}
-For Baccalà Vicentina, the time series analysis revealed strong seasonal patterns, with the $ACF$ and $PACF$ functions showing significant spikes at lag $12$, confirming the annual seasonality identified in the regression analysis. 
+For Baccalà Vicentina, the time series analysis revealed strong seasonal patterns, with the $ACF$ and $PACF$ functions showing significant spikes at lag $12$, confirming the \textbf{annual seasonality} identified in the regression analysis. 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.5\textwidth]{PlotsBEFD/PRED_SARIMA_VIC.png} 
@@ -278,52 +282,60 @@ While models with higher orders of seasonal differencing ($D=2$) produced lower 
     \caption{}
     \label{fig:ACF_VIC_LAG12}
 \end{figure}
-The residual analysis (Fig.~\ref{fig:ACF_VIC_LAG12}) of the final model showed some remaining patterns, suggesting that while the model captures the main features of the series, there might be additional structure in the data. However, attempts to incorporate additional ARIMA components did not yield improved performance, supporting the retention of the simpler specification.
-
-These SARIMA models complement the linear regression analysis by explicitly modeling the time series structure of the data, particularly the seasonal patterns that are crucial for both variants of Baccalà. The different specifications required for each variant further emphasize the distinct temporal dynamics of these products, despite their related nature.
+The residual analysis (Fig.~\ref{fig:ACF_VIC_LAG12}) of the final model showed some remaining patterns, suggesting that while the model captures the main features of the series, there might be additional structure in the data. However, attempts to incorporate additional ARIMA components did not yield improved performance, supporting the retention of the \textbf{simpler specification}.
+These SARIMA models complement the linear regression analysis by explicitly modeling the time series structure of the data, particularly the \textbf{seasonal patterns} that are crucial for both variants of Baccalà. The different specifications required for each variant further emphasize the distinct temporal dynamics of these products, despite their related nature.
 
 \subsection{SARIMAX Models}
-To extend our previous analysis with SARIMA models, we included fish consumption as an external regressor (xreg) to assess whether it could enhance the predictive performance of the models. The rationale behind this choice is rooted in exploring potential relationships between fish consumption patterns and the demand for the specific products analyzed. Below, we describe the steps and results obtained for each product category.
+To extend our previous analysis with SARIMA models, we decided to include fish consumption as an \textbf{external regressor} (xreg) to evaluate if this addition could improve the models' forecasting performance.
 
-\subsubsection{Baccalà Mantecato}
+\subsubsection{Model for Baccalà Mantecato}
 
-We tested three SARIMAX models using different parameter configurations, maintaining consistency with the previously defined SARIMA structures. Each model incorporated fish consumption data as an external regressor:
-\begin{itemize}
+Initially, we tested ARMAX models, where fish consumption was included as an external regressor.
+However, it became clear that the seasonal part of the series had a significant impact on the model's results, as expected from our SARIMA analysis. To address this, we excluded the trend from the xreg variables and instead opted for using differenced time-series.
+
+We then fitted the following models, maintaining the seasonal structure:
+\begin{itemize}[noitemsep]
     \item $SARIMAX(1,1,0)(0,1,0)[12]$
     \item $SARIMAX(0,1,1)(0,1,0)[12]$
     \item $SARIMAX(0,1,0)(0,1,0)[12]$
 \end{itemize}
+The transition from ARMAX to SARIMAX was driven by the need to account for seasonality, which the SARIMAX models handle better through the seasonal component. In the SARIMAX models, we continued to include fish consumption as an external regressor, as it was expected to provide additional explanatory power.
 
-The comparison between the SARIMA and SARIMAX models was performed using $AIC$ values as the primary metric. Notably, all SARIMAX models exhibited improved $AIC$ scores compared to their SARIMA counterparts. However, recognizing the limitations of relying solely on $AIC$, we also evaluated the models using Mean Squared Error ($MSE$) on the test set predictions.
+Next, we compared the SARIMA and SARIMAX models using the $AIC$. All SARIMAX models showed an improvement compared to their SARIMA counterparts. However, $AIC$ alone did not capture the complete performance, so we also evaluated the models using $MSE$ on the test set.
 
-The $MSE$ analysis revealed a significant improvement for all three SARIMAX models, with reductions of approximately $50$\% compared to the SARIMA models. Considering both $AIC$ and $MSE$, we selected the $SARIMAX(0,1,0)(0,1,0)[12]$ model as the most suitable for forecasting Baccalà Mantecato.
+The $MSE$ analysis revealed a significant improvement for all three SARIMAX models, reducing the error by approximately $50$\% compared to the corresponding SARIMA models. Considering both $AIC$ and $MSE$, we selected the $SARIMAX(0,1,0)(0,1,0)[12]$ model as the most suitable for forecasting Baccalà Mantecato. Even if the metrics suggest this model, it is not satisfying for the analysis as the counterpart in the SARIMA section, because it is not so far to a simple linear regression on the differenced (with $lag=1$ and $lag=12$) time series.
 
-To visualize the performance, we plot the actual versus predicted values for both SARIMA and SARIMAX on the test set. 
-\begin{figure}[H]
+We then visualized the actual versus predicted values for both SARIMA and SARIMAX models on the test set.
+\begin{figure}[h!]
     \centering
     \includegraphics[width=0.5\textwidth]{PlotsBEFD/M_COMPARE_SARIMAX_SARIMA_TEST_PRED.png} 
     \caption{}
     \label{fig:M_COMPARE_SARIMAX_SARIMA_TEST_PRED}
 \end{figure}
-
-The plot (Fig.~\ref{fig:M_COMPARE_SARIMAX_SARIMA_TEST_PRED}) highlights the substantial improvement achieved with SARIMAX, confirming the utility of including fish consumption as an external regressor in this context.
-
-Despite these positive results, the residual analysis of the selected SARIMAX model (Fig.~\ref{fig:ACF_SARIMAX_M}) indicates some remaining autocorrelation, suggesting a potential need for an autoregressive component. 
-\begin{figure}[H]
+The plot (Fig.~\ref{fig:M_COMPARE_SARIMAX_SARIMA_TEST_PRED}) highlights the improvement achieved with SARIMAX, confirming the usefulness of including fish consumption as an external regressor in this context.
+Residual analysis for the selected SARIMAX model (Fig.~\ref{fig:ACF_SARIMAX_M}) showed some remaining autocorrelation, which suggested the potential need for an autoregressive component. 
+\begin{figure}[h!]
     \centering
     \includegraphics[width=0.5\textwidth]{PlotsBEFD/ACF_SARIMAX_M.png} 
     \caption{}
     \label{fig:ACF_SARIMAX_M}
 \end{figure}
-However, introducing this component results in overfitting and worse test set performance, leading us to accept the slight loss of information in favor of generalization.
 
-\subsubsection{Baccalà Vicentina}
+Despite this, introducing an autoregressive component led to \textbf{overfitting}, resulting in worse performance on the test set. As a result, we opted to accept the slight loss of information and favored \textbf{generalization} over further model complexity.
 
-For Baccalà Vicentina, we applied a similar approach, comparing the previously selected $SARIMA(0,1,1)(0,1,0)[12]$ model with its SARIMAX counterpart, which included fish consumption as an external regressor:
+Although the $SARIMAX(0,1,0)(0,1,0)[12]$ model shows an improvement compared to its corresponding SARIMA counterpart, we are not satisfied with its performance. With $p$, $q$, $P$, and $Q$ all equal to $0$, the model does not provide a significant advantage over a simple linear regression.
 
-$SARIMAX(0,1,1)(0,1,0)[12]$
 
-The $AIC$ and $MSE$ evaluations for this product category yielded surprising results. Unlike Baccalà Mantecato, the SARIMA model consistently outperformed the SARIMAX model across both metrics. This discrepancy suggests that the inclusion of fish consumption data did not enhance the model’s predictive capabilities for Baccalà Vicentina.
+
+\subsubsection{Model for Baccalà Vicentina}
+
+For Baccalà Vicentina, we followed the same approach as for Baccalà Mantecato, comparing the previously selected $SARIMA(0,0,0)(0,1,0)[12]$ model with a SARIMAX model that incorporated fish consumption as an external regressor:
+
+\begin{itemize}
+    \item $SARIMAX(0,0,0)(0,1,0)[12]$
+\end{itemize}
+
+We performed the comparison between the SARIMA and SARIMAX models using $AIC$ as the primary metric. The $MSE$ evaluation was also conducted to assess the predictive performance on the test set. Contrary to what we observed for Baccalà Mantecato, the SARIMA model performed slightly better than the SARIMAX model in terms of both $AIC$ and $MSE$. As a result, we decided to discard the SARIMAX model for Baccalà Vicentina and retain the original SARIMA model.
 
 \begin{figure}[h!]
     \centering
@@ -332,50 +344,49 @@ The $AIC$ and $MSE$ evaluations for this product category yielded surprising res
     \label{fig:V_COMPARE_SARIMAX_SARIMA_TEST_PRED}
 \end{figure}
 
-A closer examination of the prediction plots (Fig.~\ref{fig:V_COMPARE_SARIMAX_SARIMA_TEST_PRED}) revealed that both models produced similar trends. However, the SARIMAX model appeared to overestimate quantities during the test period, coinciding with a recurring December peak absent in the test set. This overestimation likely contributed to the inferior performance of the SARIMAX model, as indicated by the higher $AIC$ and $MSE$ values.
+The plot (Fig.~\ref{fig:V_COMPARE_SARIMAX_SARIMA_TEST_PRED}) shows that both models produced similar performances. Suggesting that adding fish consumption as an external regressor did not enhance the model’s predictive power for this product.
 
-Consequently, we decided to retain the original SARIMA model for Baccalà Vicentina, as the inclusion of fish consumption did not provide a tangible benefit and introduced a risk of overfitting.
+Consequently, we opted to retain the original $SARIMA(0,0,0)(0,1,0)[12]$ model for Baccalà Vicentina, as the inclusion of fish consumption did not provide any tangible benefits.
 
-The comparative analysis between SARIMA and SARIMAX models demonstrates the importance of context-specific considerations when incorporating external regressors. While fish consumption significantly improved the predictive accuracy for Baccalà Mantecato, it had the opposite effect for Baccalà Vicentina. These findings highlight the nuanced relationship between external factors and product demand, emphasizing the need for tailored modeling approaches in time series forecasting.
+This comparison illustrates that the effect of including external regressors, such as fish consumption, can vary significantly across product categories. While it improved the predictions for Baccalà Mantecato, it did not offer any benefit for Baccalà Vicentina. These results emphasize the importance of carefully considering the specific characteristics of the time series and the product being analyzed when selecting external factors to include in forecasting models.
+
 
 \subsection{GAM models}
-\subsubsection{Baccalà Mantecato}
-In this analysis, we aimed to explore the potential benefits of non-linear models, using Generalized Additive Models (GAM), and compared them to the previously selected Multiple Linear Regression model. Initially, we fitted the MLR model and then examined the linear effects through GAM to assess the possibility of improving the fit with non-linear relationships.
+\subsubsection{Model for Baccalà Mantecato}
+In this analysis, we aimed to explore the potential benefits of non-linear models, using \textbf{Generalized Additive Models} (GAM), and compared them to the previously selected Linear Regression model. We started by allowing non-linear relationships between the predictors trend and fish\_cons with the response variable Baccala\_Mantecato.
 
-Upon visual inspection of the plots (Fig.~\ref{fig:GAM_M_LINEARITY}), it was evident that the relationship between the predictors and the response variable was clearly linear. 
+The plots (Fig.~\ref{fig:GAM_M_LINEARITY}) revealed a possible non-linear relationship. However, further statistical analysis of the model summary indicated that these non-linear relationships were not statistically significant. Specifically, the \textbf{Anova for Nonparametric Effects} showed that the nonparametric \textbf{F-values} for \texttt{trend} and \texttt{fish\_cons} had \textbf{P-values} of $0.1708$ and $0.3461$, respectively. 
+
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.5\textwidth]{PlotsBEFD/GAM_M_LINEARITY.png} 
     \caption{}
     \label{fig:GAM_M_LINEARITY}
 \end{figure}
-This observation was further supported by the statistical results from the 'Anova for Nonparametric Effects', which showed that the nonparametric $F\_values$ for the smoothing terms $s(trend)$ and $s(fish\_cons)$ were not statistically significant, with $P\_values$ of $0.19$ and $0.08$, respectively.
-These results strongly indicate that these variables do not exhibit non-linear relationships with the response variable as initially hypothesized.
 
-Therefore, for parsimony, interpretability, and simplicity reasons, we concluded that the GAM model was unnecessary and opted to exclude it in favour of the multiple linear regression model. This model not only aligns better with the data but also provides more meaningful and statistically sound results, consistent with the initial assumption of linearity.
+These results demonstrated that the GAM model did not provide any significant improvement over the multiple linear regression model. Consequently, for reasons of simplicity, we decided to exclude the GAM model and retain the multiple linear regression model, which better aligns with the data and offers more meaningful and statistically sound results.
 
-\subsubsection{Baccalà Vicentina}
-For Baccalà Vicentina, we followed a similar approach by fitting a GAM model to check for non-linear relationships. However, as with Baccalà Mantecato, the plots clearly demonstrated that the relationship between the explanatory variables and the response variable remained linear. This again suggested that the non-linear modeling approach was not needed.
+\subsubsection{Model for Baccalà Vicentina}
+For Baccalà Vicentina, we applied a similar approach to explore potential non-linear relationships between the predictors and the response variable. The visualization of the effects indicated that the behavior of the explanatory variables was consistent with that observed for Baccalà Mantecato, suggesting that non-linear modeling was again unnecessary.
 
-Moreover, in the section dedicated to linear regression, we had already determined that the best model for Baccalà Vicentina was the reduced model, where only the Month variable was included as a predictor. Given that this model was the most effective, we decided to retain it.
+Furthermore, in the section dedicated to linear regression, we had already determined that the best model for Baccalà Vicentina was the reduced model, which included only the \texttt{Month} variable as a predictor. This model was the most effective and parsimonious.
 
-In conclusion, both analyses—Baccalà Mantecato and Baccalà Vicentina—strongly suggest that non-linear models, such as GAMs, are not necessary in this case. The evidence indicates that linear models are sufficient for capturing the relationships in the data, and choosing them over GAMs offers a more parsimonious, interpretable, and statistically sound solution.
+In conclusion, both analyses for Baccalà Mantecato and Baccalà Vicentina indicate that non-linear models such as GAMs do not significantly enhance model performance. Linear models are sufficient for capturing the relationships in the data and provide a more interpretable and statistically sound solution.
+
 
 \subsection{Prophet model}
-For the Prophet model, two distinct models are created for each dish: one with logistic growth and one with linear growth. The choice of model depends on the nature of the data, but both models include yearly seasonality, which is crucial to capturing the seasonal cycles typical of food sales, especially for traditional dishes like Baccalà. The parameter $n.changepoints=5$, that is selected after several tries, trying do avoid overfitting but also to reach a good fit, specifies the number of points in time where the series can experience structural changes. Finally a multiplicative seasonality is selected for both dishes.
-\subsubsection{Baccalà Mantecato}
-We adapted the model for the Mantecato sales data, and the residuals revealed some issues, particularly highlighted by both the $PACF$ and $ACF$ plots, especially with the spike at lag $12$. Despite this, attempts to improve the model by increasing the number of change points or experimenting with different specifications led to a deterioration in performance on the test set.
+For the Prophet model, two distinct models are created for each dish: one with \textbf{logistic growth} and one with \textbf{linear growth}. The choice of model depends on the nature of the data, but both models include yearly seasonality, which is crucial to capturing the seasonal cycles typical of food sales, especially for traditional dishes like Baccalà. The parameter $n.changepoints=5$, that is selected after several tries, trying do avoid overfitting but also to reach a good fit, specifies the number of points in time where the series can experience structural changes. Finally a \textbf{multiplicative seasonality} is selected for both dishes.
+\subsubsection{Model for Baccalà Mantecato}
+We adapted the model for the Mantecato sales data, and the residuals revealed some issues, particularly highlighted by both the $PACF$ and $ACF$ plots (Fig.~\ref{fig:RES_PROPHET_MAN}), especially with the spike at lag $12$. Despite this, attempts to improve the model by increasing the number of change points or experimenting with different specifications led to a deterioration in performance on the test set.
 
-We also tried to incorporate a model estimated on the residuals using the `$auto.arima$` function, but this did not improve the model's performance. Given these results, we decided to retain the original Prophet model for its simplicity, as further adjustments did not yield better predictive accuracy.
-
+We also tried to incorporate a model estimated on the residuals using the `$auto.arima$` function, but this did not improve the model's performance. 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.5\textwidth]{PlotsBEFD/RES_PROPHET_MAN.png} 
     \caption{}
     \label{fig:RES_PROPHET_MAN}
 \end{figure}
-
-Finally, in the graph below (Fig.~\ref{fig:PRED_PROPHET_MAN}), we show the predicted values versus the actual values. From the graph, we can observe a good fit to the training data, but the same issues as with the other models are evident on the test set.
+Finally, in the graph below (Fig.~\ref{fig:PRED_PROPHET_MAN}), we can observe a good fit to the training data, but the same issues as with the other models are evident on the test set.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.5\textwidth]{PlotsBEFD/PRED_PROPHET_MAN.png} 
@@ -383,10 +394,15 @@ Finally, in the graph below (Fig.~\ref{fig:PRED_PROPHET_MAN}), we show the predi
     \label{fig:PRED_PROPHET_MAN}
 \end{figure}
 
-\subsubsection{Baccalà Vicentina}
-The same behavior is observed for Baccalà alla Vicentina, where the residuals (Fig.~\ref{fig:RES_PROPHET_VIC}) show a spike at lag $12$. However, we do not want to dwell too much on repeating the same observations, so for completeness, we are including the graph of the actual values versus the predicted values (Fig.~\ref{fig:PRED_PROPHET_VIC}). 
-
-% TESTO EVENTUALMETE DA CAMBIARE
+\subsubsection{Model for Baccalà Vicentina}
+The same behavior is observed for Baccalà alla Vicentina, where the residuals (Fig.~\ref{fig:RES_PROPHET_VIC}) show an important spike at lag $12$. 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{PlotsBEFD/RES_PROPHET_VIC.png} 
+    \caption{}
+    \label{fig:RES_PROPHET_VIC}
+\end{figure} 
+However, we do not want to dwell too much on repeating the same observations, so for completeness, we are including the graph of the actual values versus the predicted ones (Fig.~\ref{fig:PRED_PROPHET_VIC}). 
 
 \begin{figure}[H]
     \centering
@@ -395,30 +411,11 @@ The same behavior is observed for Baccalà alla Vicentina, where the residuals (
     \label{fig:PRED_PROPHET_VIC}
 \end{figure}
 
-%\begin{figure}[H]
-    %\centering
-    %\includegraphics[width=0.5\textwidth]{PlotsBEFD/RES_PROPHET_VIC.png} 
-    %\caption{}
-    %\label{fig:RES_PROPHET_VIC}
-%\end{figure} 
-
-% -----------------------------------------------------------------------
-% SECONDO ME IL GRAFICO DEI RESIDUI ERA DA INCLUDERE
-% VEDETE VOI
-% IN CASO C'è DA MODIFIACRE IL TESTO QUI SOPRA
-% -----------------------------------------------------------------------
-% SE VOLETE METTERLO OK PERÓ:
-%   - Non é commentato e non sapevo se farlo perché si ripete sempre stessa roba
-%   - Cosí stiamo in 13 pagine esatte se le conclusioni vi vanno bene
-% D'ALTRO CANTO É PIU COMPLETO E COERENTE IL REPORT
-
-
-
 \subsection{Exponential smoothing Models}
-After exploring other approaches, we decided to test Exponential Smoothing (ES) models to analyze and forecast the time series data for Baccalà Mantecato and Baccalà Vicentina. These models are particularly valued for their simplicity and their ability to assign exponentially decreasing weights to past observations, emphasizing the most recent data. They also offer flexibility in handling trend and seasonality, making them ideal for time series with recurring patterns.
+After exploring other approaches, we decided to test \textbf{Exponential Smoothing} (ES) models to analyze and forecast the time series data for Baccalà Mantecato and Baccalà Vicentina. These models are particularly valued for their simplicity and their ability to assign exponentially decreasing weights to past observations, emphasizing the most recent data. They also offer flexibility in handling trend and seasonality, making them ideal for time series with recurring patterns.
 For both datasets, we began by testing the classic ETS model (Error, Trend, Seasonality), an approach that automatically selects the optimal configuration based on the data.
 
-\subsubsection{Baccalà Mantecato}
+\subsubsection{Model for Baccalà Mantecato}
 For the Baccalà Mantecato series, the ETS model effectively captured the key dynamics of the data, providing a strong baseline for further analysis. The model demonstrated its ability to adapt to the trends and seasonality present in the series, which were confirmed by both visual and statistical evaluations.
 \begin{figure}[h!]
     \centering
@@ -426,16 +423,17 @@ For the Baccalà Mantecato series, the ETS model effectively captured the key dy
     \caption{}
     \label{fig:Residuals_ETS_M}
 \end{figure}
-Residual analysis (Fig.~\ref{fig:Residuals_ETS_M}) revealed that the residuals were randomly distributed around $zero$, with no significant patterns or autocorrelation. This indicates that the model successfully accounted for the underlying trends and seasonality, leaving minimal systematic errors. Such behavior is a positive indication of the effectiveness of the ETS model for this time series.
+Residual analysis (Fig.~\ref{fig:Residuals_ETS_M}) revealed that the residuals were randomly distributed around $zero$, with no significant patterns. This indicates that the model successfully accounted for the underlying trends and seasonality, leaving minimal systematic errors. Such behavior is a positive indication of the effectiveness of the ETS model for this time series.
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.5\textwidth]{PlotsBEFD/TS_M_ETS.png} 
     \caption{}
     \label{fig:TS_M_ETS}
 \end{figure}
-The quality of the forecast was further validated by a visual comparison between the actual and predicted values (Fig.~\ref{fig:TS_M_ETS}). During the training phase, the forecast line closely followed the actual data, reflecting the model's ability to capture key patterns. During testing, the predictions remained near the observed values, with only minor deviations in the most extreme peaks. This consistency highlights the model's capacity to generalize and handle unseen data effectively.
 
-We then explored more specific variants of the ETS model by introducing additive and multiplicative seasonal components through the Holt-Winters method. Using the additive approach resulted in slightly worse outcomes compared to the standard ETS model, with increases in both the $MSE$ and the $AIC$. These metrics indicated that the added complexity of the additive approach did not yield significant benefits. The multiplicative approach for seasonality provided even less satisfactory results, with higher errors and increased complexity, confirming that the original ETS model was the best option for this series as we can see from (Tab.~\ref{table:model_comparison_man}).
+The quality of the forecast was further validated by a visual comparison between the actual and predicted values (Fig.~\ref{fig:TS_M_ETS}). During the training phase, the forecast line closely followed the actual data, reflecting the model's ability to capture key patterns. During testing, the predictions remained near the observed values, with some deviations in the most extreme peaks. This consistency highlights the model's capacity to generalize and handle unseen data sufficiently.
+
+We then explored more specific variants of the ETS model by introducing \textbf{additive} and \textbf{multiplicative} seasonal components through the\textbf{ Holt-Winters} method. Using the additive approach resulted in slightly worse outcomes compared to the standard ETS model, with increases in both the $MSE$ and the $AIC$. These metrics indicated that the added complexity of the additive approach did not yield significant benefits. The multiplicative approach for seasonality provided even less satisfactory results, with higher errors and increased complexity, confirming that the original ETS model was the best option for this series as we can see from (Tab.~\ref{table:model_comparison_man}).
 
 \begin{table}[h!]
 \centering
@@ -452,8 +450,8 @@ Holt-Winters Multiplicative & 177.2098 & 274.7737 \\
 \label{table:model_comparison_man}
 \end{table}
 
-\subsubsection{Baccalà Vicentina}
-Turning to the Baccalà Vicentina series, the behavior of the models was similar, but presented an interesting difference. Once again, the ETS model produced strong initial results, with a low $MSE$ and a favorable $AIC$. However, incorporating multiplicative seasonality through Holt-Winters led to a slight reduction in $MSE$, albeit at the cost of a higher $AIC$ (Tab.~\ref{table:model_comparison_vic}).
+\subsubsection{Model for Baccalà Vicentina}
+Turning to the Baccalà Vicentina series, the behavior of the models was similar, but presented an interesting difference. Once again, the ETS model produced strong initial results, with a low $MSE$ and a favorable $AIC$. However, incorporating \textbf{multiplicative seasonality} through \textbf{Holt-Winters} led to a slight reduction in $MSE$, albeit at the cost of a higher $AIC$ (Tab.~\ref{table:model_comparison_vic}).
 
 \begin{table}[h!]
 \centering
@@ -470,25 +468,29 @@ Holt-Winters Multiplicative & 1.434768 & 109.9921 \\
 \label{table:model_comparison_vic}
 \end{table}
 
-This trade-off between forecast accuracy and model complexity led us to select the multiplicative seasonal model as the most suitable for this series. While the increase in $AIC$ reflected higher complexity, our primary goal of minimizing forecast errors justified this choice. By prioritizing $MSE$, we were able to achieve a more accurate forecast, albeit at a slightly higher computational cost.
+This trade-off between forecast accuracy and model complexity led us to select the \textbf{multiplicative seasonal model} as the most suitable for this series. While the increase in $AIC$ reflected higher complexity, our primary goal of \textbf{minimizing forecast errors} justified this choice.
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.5\textwidth]{PlotsBEFD/Residuals_HWM_V.png} 
     \caption{}
     \label{fig:Residuals_HWM_V}
 \end{figure}
-Residual analysis (Fig.~\ref{fig:Residuals_HWM_V}) confirmed that the selected models effectively captured the main characteristics of the time series. The residuals were randomly distributed around $zero$, showing no repeated patterns and indicating no systematic errors. The absence of significant spikes in the residuals' $ACF$ and $PACF$ plots further reinforced this conclusion. This is a strong indication that the chosen models are robust and reliable for forecasting purposes.
+Residual analysis (Fig.~\ref{fig:Residuals_HWM_V}) confirmed that the selected models effectively captured the main characteristics of the time series. The residuals were randomly distributed around $zero$, showing no repeated patterns and indicating no systematic errors. 
+
+The absence of significant spikes in the residuals' $ACF$ and $PACF$ plots further reinforced this conclusion. This is a strong indication that the chosen model is robust and reliable for forecasting purposes.
+
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.5\textwidth]{PlotsBEFD/TS_HWM_V.png} 
     \caption{}
     \label{fig:TS_HWM_V}
 \end{figure}
-Finally, the forecast plots (Fig.~\ref{fig:TS_HWM_V}) clearly illustrated the models' ability to follow the trends and seasonality of the data in both the training and testing phases.
+
+Finally, the forecast plot (Fig.~\ref{fig:TS_HWM_V}) clearly illustrated the models' ability to follow the trends and seasonality in the training phase. In the \textbf{test phase}, instead, the green line representing the predicted values shows a good alignment with the actual values, maintaining the seasonal structure. Some underestimations occur during sharp spikes in the data, but overall the model provides \textbf{reliable forecasts}.
 
 \section{Conclusions}
 
-In this last section we are going to compare the results of the different models on the training and test sets. To compare and properly discuss these results we created a table (Tab.~\ref{table:model_comparison_inverted}) with the $MSE$ values for each model on the training and test sets.% and plot the results.
+In this last section we are going to compare the results of the different models on the training and test sets. To compare and properly discuss these results we created a table (Tab.~\ref{table:model_comparison_inverted}) with the $MSE$ values for each model on the training and test sets.
 
 \begin{table}[H]
 \centering
@@ -509,20 +511,34 @@ In this last section we are going to compare the results of the different models
 \label{table:model_comparison_inverted}
 \end{table}
 
-From the table \ref{table:model_comparison_inverted} and subsequent plots, several insights can be drawn regarding the performance of the models.
+From the table \ref{table:model_comparison_inverted}, several insights can be drawn regarding the performance of the models.
 
-The results show that Linear Regression provided the best performance, achieving the lowest mean squared error on the test set. However, at the same time, the discrepancy between the results obtained on the training set and those on the test set suggests a possible case of overfitting. This observation applies to all analyzed models and has been the subject of numerous investigations to understand the reasons behind it, which we aim to address in future analyses. % when we are going to address this future analysis?
+The results show that Linear Regression provided the best performance, achieving the lowest \textbf{mean squared error} on the test set. However, at the same time, the discrepancy between the results obtained on the training set and those on the test set suggests a possible case of \textbf{overfitting}. This observation applies to all analyzed models and has been the subject of numerous investigations to understand the reasons behind it, which we aim to address in future analyses. % when we are going to address this future analysis?
 
 The best alternative to Linear Regression, in our assessment, is the SARIMAX model. By incorporating the effect of the exogenous variable, SARIMAX outperforms models that only account for seasonality and trend.
 
-An interesting observation regarding the test set performance, as previously mentioned, is the significant discrepancy between training and test results. Analyzing the historical series, we observed that the peak for $2024$ occurred in September, whereas in previous years, it consistently occurred in December. However, all models predicted the peak for December $2024$, adhering to historical trends that were not followed in the most recent year. This anomaly remains unexplained.
+An interesting observation regarding the \textbf{test set performance}, as previously mentioned, is the significant discrepancy between training and test results. Analyzing the historical series, we observed that the peak for $2024$ occurred in September, whereas in previous years, it consistently occurred in December. However, all models predicted the peak for December $2024$, adhering to historical trends that were not followed in the most recent year. This anomaly remains unexplained.
 
-A practical limitation of the Linear Regression model is its dependence on the exogenous variable (fish\_cons), which is necessary for making predictions. For instance, to forecast the value for January $2025$, the fish\_cons data for November $2024$ is required. Since this data is sourced online, there is no guarantee it will be updated frequently enough, potentially compromising the timeliness of the forecasts. This limitation also applies to SARIMAX, which is why a model like SARIMA could be considered as an alternative.
+A practical limitation of the Linear Regression model is its dependence on the exogenous variable ($fish\_cons$), which is necessary for making predictions. For instance, to forecast the value for January $2025$, the $fish\_cons$ data for November $2024$ is required. Since this data is sourced online, there is no guarantee it will be updated frequently enough, potentially compromising the timeliness of the forecasts. This limitation also applies to SARIMAX, which is why a model like SARIMA could be considered as an alternative.
 
-For Baccalà Vicentina, the issues are similar: the test set is not representative of the training set, and evaluating the models' performance on the test set distorts the results. In this case, the best-performing model on the training set is Prophet, but it is outperformed by the Holt-Winters Multiplicative model on the test set. This result suggests, as evidenced by the p-values in the regression model, that the relationship with the fish\_cons variable is not statistically significant.
+For Baccalà Vicentina, the issues are similar: the test set is not representative of the training set, and evaluating the models' performance on the test set distorts the results. In this case, the best-performing model on the training set is \textbf{Prophet}, but it is outperformed by the \textbf{Holt-Winters Multiplicative model} on the test set. This result suggests, as evidenced by the p-values in the regression model, that the relationship with the $fish\_cons$ variable is not statistically significant.
 
 Although the results for Baccalà Vicentina initially appear better than those for Baccalà Mantecato, the scale of the data must be considered. The quantities in kilograms sold for Baccalà Vicentina are roughly between $1/4$ and $1/3$ of those for Baccalà Mantecato. During our analyses, we tested additional models, for both the response variables, such as introducing non-linear trends (look at the code), but, as expected, none of these produced significant improvements for our objective.
 
-Overall, the analysis demonstrates that certain models are preferable to others and that the most complex model is not always the best-performing one. For example, adding transformations of the trend and fish\_cons variables in the code did not yield better results. However, due to the ambiguous behavior of the time series in the test set and the lack of a clear explanation for it, we cannot be certain that using the model for business purposes will be valid and achieve the same level of accuracy observed in the training set.
+Overall, the analysis demonstrates that certain models are preferable to others and that the most complex model is not always the best-performing one. For example, adding transformations of the trend and $fish\_cons$ variables in the code did not yield better results. However, due to the ambiguous behavior of the time series in the test set and the lack of a clear explanation for it, we cannot be certain that using the model for business purposes will be valid and achieve the same level of accuracy observed in the training set.
 
+This analysis was both challenging and insightful. 
+On one hand, the quality of the data proved to be inadequate due to the limited time series (only $36$ observations) and a test set that, in our opinion, was not representative of the training set. This discrepancy distorted our evaluation of the models’ performance. 
+On the other hand, it was stimulating to address a real-world problem and to observe how two seemingly similar products—Baccalà Mantecato and Baccalà Vicentina—exhibited markedly different behaviors.
+
+Data collection required significant effort, starting with an initial meeting to present our proposal and understand the client’s needs, followed by a second meeting to manually extract and transcribe data from invoices. Additionally, sourcing external data presented its own set of challenges. 
+We explored websites such as \textbf{ISTAT}, \textbf{Eurostat}, and \textbf{EUMOFA}, but many attempts turned out to be fruitless. 
+Nonetheless, we successfully identified a variable—salmon quantities—that appears to correlate with Baccalà trends, even if this might be a coincidence.
+
+Our mission was to provide an accurate yet interpretable model to explain our findings to \textit{Arte Culinaria da Jhonny}. 
+We believe we achieved this goal, especially for Baccalà Mantecato, which is also the establishment’s flagship product (see the interpretation of linear regression coefficients for details).
+
+A key recommendation we made to the business is to maintain an active collaboration. 
+This would allow for the collection of a more extensive time series in the future and facilitate the identification of additional factors influencing the target variables. 
+Incorporating these factors into the model could enhance its performance and provide actionable insights for the business.
 \end{document}
