@@ -15,7 +15,6 @@ output:
     smooth_scroll: true
 ---
 
-# Packages
 ```{r load_libraries_configurations, message=FALSE, warning=FALSE}
 rm(list=ls())
 
@@ -32,13 +31,8 @@ library(lmtest)
 library(prophet)
 library(gam)
 library(knitr)
-```
 
-```{r}
-mse = function(pred, real){
-  mse = mean((real-pred)^2)
-  return(mse)
-}
+source("Code/Functions_Utilies.R")
 ```
 
 # Data Loading and Preprocessing
@@ -1094,21 +1088,6 @@ results <- data.frame(
 )
 ```
 
-We define a function to plot the results
-```{r plot_resuts_function, include=FALSE}
-plot_results = function(results, y_name) {
-  ggplot(results, aes(x = Model, fill = "MSE")) +
-    geom_bar(aes_string(y = y_name), stat = "identity", position = "dodge") +
-    scale_fill_manual(values = "#6BC3FF") +
-    labs(title = paste("Comparison of", gsub("_", " ", y_name)), x = "Model", y = "MSE", fill = "Model") +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1),
-          legend.position = "none",
-          plot.title = element_text(hjust = 0.5))
-}
-```
-
-
 ```{r plot_results, message=FALSE, warning=FALSE}
 plot_results(results, "MSE_Train_Mantecato")
 ```
@@ -1126,5 +1105,4 @@ plot_results(results, "MSE_Test_Vicentina")
 ```
 For Baccala Vicentina, Exponential Smoothing slightly outperforms the other models in the test phase. 
 So it should be the one selected for prediction tasks.
-
 
