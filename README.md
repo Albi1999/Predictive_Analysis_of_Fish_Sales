@@ -137,4 +137,9 @@ For further questions, feel free to open an issue or contact the contributors!
 
 </div>
 
-<p><img src="https://img.shields.io/badge/R-276DC3?logo=r&amp;logoColor=white&amp;style=plastic" alt="R" height="25"/></p>
+<p>
+    <img src="https://img.shields.io/badge/R-276DC3?logo=r&amp;logoColor=white&amp;style=plastic" alt="R" height="25"/>
+    <img alt="RStudio" src="https://img.shields.io/badge/RStudio-75AADB?style=plastic&logo=rstudioide&logoColor=white&logoSize=auto" height="25"/>
+    <img alt="Latex" src="https://img.shields.io/badge/Latex-008080?style=plastic&logo=latex&logoColor=white&logoSize=auto" height="25"/>
+    <img alt="Overleaf" src="https://img.shields.io/badge/Overleaf-47A141?style=plastic&logo=overleaf&logoColor=white&logoSize=auto" height="25"/>
+</p>
