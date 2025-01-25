@@ -131,7 +131,7 @@ This project is licensed under the MIT License. See `LICENSE` for details.
 -   Course: Business, Economic, and Financial Data (BEFD)
 -   Professor: Mariangela Guidolin
 -   University: University of Padua
--   MCs: Data Science
+-   MSc: Data Science
 
 For further questions, feel free to open an issue or contact the contributors!
 
