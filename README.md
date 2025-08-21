@@ -1,5 +1,21 @@
-# Predictive Analysis of Baccalà Sales: Insights and Challenges for Arte Culinaria da Jhonny
+<p align="center">
+  <img src="logo_unipd.png" alt="" height="70"/>
+</p>
 
+# Predictive Analysis of Baccalà Sales: Insights and Challenges for Arte Culinaria da Jhonny
+</div>
+
+<p>
+
+  <img alt="R" src="https://img.shields.io/badge/R-276DC3?logo=r&logoColor=white&style=for-the-badge" height="25"/>
+  <img alt="Latex" src="https://img.shields.io/badge/Latex-008080?style=for-the-badge&logo=latex&logoColor=white&logoSize=auto" height="25"/>
+  <img alt="RStudio" src="https://img.shields.io/badge/RStudio-75AADB?style=for-the-badge&logo=rstudioide&logoColor=white&logoSize=auto" height="25"/>
+  <img alt="Overleaf" src="https://img.shields.io/badge/Overleaf-47A141?style=for-the-badge&logo=overleaf&logoColor=white&logoSize=auto" height="25"/>
+  <img alt="Git" src="https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white&logoSize=auto" height="25"/>
+  <img alt="GitHub" src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white&logoSize=auto" height="25"/>
+<p>
+
+    
 ## Overview
 
 This repository contains the work for a Business, Economic, and Financial Data (BEFD) course project. The project focuses on analyzing the time series data of Baccalà production in Treviso, Italy, using advanced statistical methods to identify trends, seasonality, and optimize forecasting models.
@@ -134,12 +150,3 @@ This project is licensed under the MIT License. See `LICENSE` for details.
 -   MSc: Data Science
 
 For further questions, feel free to open an issue or contact the contributors!
-
-</div>
-
-<p>
-    <img src="https://img.shields.io/badge/R-276DC3?logo=r&amp;logoColor=white&amp;style=plastic" alt="R" height="25"/>
-    <img alt="RStudio" src="https://img.shields.io/badge/RStudio-75AADB?style=plastic&logo=rstudioide&logoColor=white&logoSize=auto" height="25"/>
-    <img alt="Latex" src="https://img.shields.io/badge/Latex-008080?style=plastic&logo=latex&logoColor=white&logoSize=auto" height="25"/>
-    <img alt="Overleaf" src="https://img.shields.io/badge/Overleaf-47A141?style=plastic&logo=overleaf&logoColor=white&logoSize=auto" height="25"/>
-</p>
